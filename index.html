@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mark's Daily Projects Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e; color: #e0e0e0; padding: 16px; min-height: 100vh;
+  }
+  h1 { text-align: center; font-size: 1.5em; margin-bottom: 4px; color: #00d4ff; }
+  .subtitle { text-align: center; font-size: 0.9em; color: #888; margin-bottom: 14px; }
+
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 14px; overflow-x: auto; }
+  .tab-btn {
+    padding: 10px 16px; border-radius: 8px 8px 0 0; border: 2px solid #333; border-bottom: none;
+    background: #16213e; color: #aaa; font-weight: 600; font-size: 0.82em; cursor: pointer; white-space: nowrap;
+  }
+  .tab-btn.active { background: #0f3460; border-color: #00d4ff; color: #00d4ff; }
+  .tab-btn:hover { border-color: #00d4ff; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .section { background: #16213e; border-radius: 12px; padding: 14px; margin-bottom: 10px; border-left: 4px solid #333; }
+  .section.financial { border-left-color: #22c55e; }
+  .section.reminder { border-left-color: #f5a623; }
+  .section.vehicle { border-left-color: #3b82f6; }
+  .section.urgent { border-left-color: #ef4444; }
+
+  .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .section-time { font-size: 0.72em; background: #0f3460; padding: 3px 8px; border-radius: 6px; color: #00d4ff; white-space: nowrap; }
+  .section-title { font-size: 1em; font-weight: 700; }
+  .badge { font-size: 0.65em; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin-left: 6px; }
+  .badge.todo { background: #f5a623; color: #1a1a2e; }
+  .badge.done { background: #22c55e; color: #1a1a2e; }
+  .badge.urgent { background: #ef4444; color: #fff; }
+
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid #1a1a2e; font-size: 0.9em; }
+  .checklist li:last-child { border-bottom: none; }
+  input[type="checkbox"] { width: 20px; height: 20px; accent-color: #4ecdc4; cursor: pointer; flex-shrink: 0; margin-top: 2px; }
+  input[type="checkbox"]:checked + .cl { text-decoration: line-through; color: #666; }
+  .cl { transition: all 0.2s; }
+
+  .detail { font-size: 0.8em; color: #888; margin-left: 30px; margin-top: 2px; }
+  .info-box { background: #0f3460; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 0.82em; line-height: 1.5; }
+  .info-box strong { color: #00d4ff; }
+  .note { font-size: 0.78em; color: #f5a623; margin-top: 6px; font-style: italic; }
+
+  .progress-bar { background: #0f3460; border-radius: 8px; height: 8px; margin: 0 0 6px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #4ecdc4, #00d4ff); border-radius: 8px; transition: width 0.3s; }
+  .progress-text { text-align: center; font-size: 0.82em; color: #888; margin-bottom: 14px; }
+
+  .save-row { display: flex; gap: 8px; margin-top: 14px; }
+  .save-btn {
+    flex: 1; padding: 14px; background: linear-gradient(135deg, #4ecdc4, #00d4ff);
+    border: none; border-radius: 10px; color: #1a1a2e; font-size: 1em; font-weight: 700; cursor: pointer;
+  }
+  .save-btn:hover { opacity: 0.9; }
+  .saved-msg { text-align: center; color: #4ecdc4; font-size: 0.85em; margin-top: 6px; opacity: 0; transition: opacity 0.3s; }
+  .saved-msg.show { opacity: 1; }
+
+  .vehicle-img { text-align: center; font-size: 3em; margin: 10px 0; }
+  .cost-est { display: inline-block; background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; color: #f5a623; }
+
+  .weather-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .weather-city { background: #16213e; border-radius: 12px; padding: 14px; border-left: 4px solid #00d4ff; }
+  .weather-city.fl { border-left-color: #f97316; }
+  .weather-city.ma { border-left-color: #3b82f6; }
+  .weather-city h3 { font-size: 0.95em; margin-bottom: 8px; }
+  .weather-city h3 .flag { margin-right: 4px; }
+  .weather-now { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .weather-temp { font-size: 2.2em; font-weight: 700; }
+  .weather-temp.warm { color: #f97316; }
+  .weather-temp.cold { color: #3b82f6; }
+  .weather-desc { font-size: 0.82em; color: #aaa; }
+  .weather-details { font-size: 0.78em; color: #888; line-height: 1.8; }
+  .weather-icon { font-size: 2em; }
+  .forecast-row { display: flex; justify-content: space-between; margin-top: 8px; }
+  .forecast-day { text-align: center; font-size: 0.72em; color: #aaa; }
+  .forecast-day .ftemp { font-weight: 600; color: #e0e0e0; font-size: 1.1em; }
+  .forecast-day .ficon { font-size: 1.3em; }
+  .weather-loading { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+  .weather-updated { text-align: center; font-size: 0.7em; color: #555; margin-top: 10px; }
+
+  /* Health tab styles */
+  .section.thyroid { border-left-color: #e94560; }
+  .section.monitor { border-left-color: #00d4ff; }
+  .section.breakfast { border-left-color: #f5a623; }
+  .section.am-rx { border-left-color: #4ecdc4; }
+  .section.health-check { border-left-color: #a855f7; }
+  .section.exercise { border-left-color: #f97316; }
+  .section.food-strategy { border-left-color: #22c55e; }
+  .section.lunch { border-left-color: #f5a623; }
+  .section.dinner { border-left-color: #f5a623; }
+  .section.pm-rx { border-left-color: #4ecdc4; }
+  .section.alcohol { border-left-color: #ef4444; }
+  .section.coffee { border-left-color: #8B4513; }
+  .section.tea-recipe { border-left-color: #22c55e; }
+  .section.bedtime { border-left-color: #6366f1; }
+
+  .day-bar { display: flex; justify-content: center; gap: 5px; margin-bottom: 14px; flex-wrap: wrap; }
+  .day-btn {
+    padding: 8px 12px; border-radius: 8px; border: 2px solid #333;
+    background: #16213e; color: #aaa; font-weight: 600; font-size: 0.82em; cursor: pointer;
+  }
+  .day-btn.active { background: #0f3460; border-color: #00d4ff; color: #00d4ff; }
+  .day-btn:hover { border-color: #00d4ff; }
+
+  .monitor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .monitor-card { background: #0f3460; border-radius: 8px; padding: 10px; text-align: center; }
+  .monitor-card label { display: block; font-size: 0.68em; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+  .monitor-card input[type="text"] {
+    width: 100%; background: #1a1a2e; border: 1px solid #333; border-radius: 6px;
+    color: #fff; padding: 6px; text-align: center; font-size: 1em;
+  }
+  .monitor-card input[type="text"]:focus { outline: none; border-color: #00d4ff; }
+
+  .rx-pill { display: inline-block; background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; }
+  .tip { font-size: 0.78em; color: #4ecdc4; margin-top: 4px; }
+
+  .alcohol-tracker { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; }
+  .alc-day { background: #0f3460; border-radius: 8px; padding: 8px 4px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .alc-day .label { font-size: 0.7em; color: #888; display: block; }
+  .alc-day .icon { font-size: 1.3em; display: block; margin-top: 2px; }
+  .alc-day.sober { background: #14532d; }
+  .alc-day.drank { background: #7f1d1d; }
+  .alc-score { text-align: center; margin-top: 8px; font-size: 0.9em; font-weight: 600; }
+
+  .recipe-step { display: flex; gap: 8px; padding: 4px 0; font-size: 0.88em; }
+  .step-num { background: #22c55e; color: #1a1a2e; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75em; flex-shrink: 0; }
+
+  .miles-counter { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; background: #0f3460; border-radius: 8px; padding: 12px; }
+  .miles-counter .miles-label { font-size: 0.8em; color: #888; }
+  .miles-counter .miles-val { font-size: 1.8em; font-weight: 700; color: #f97316; }
+  .miles-counter .miles-unit { font-size: 0.8em; color: #888; }
+  .florida-badge { display: inline-block; background: #f97316; color: #1a1a2e; font-size: 0.65em; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin-left: 6px; }
+
+  .reset-btn {
+    padding: 14px 18px; background: #333; border: none; border-radius: 10px;
+    color: #888; font-size: 0.9em; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>📋 Mark's Daily Projects Dashboard</h1>
+<p class="subtitle" id="dateDisplay"></p>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('weather',this)">🌤️ Weather</button>
+  <button class="tab-btn" onclick="showTab('health',this)">💊 Health</button>
+  <button class="tab-btn" onclick="showTab('financial',this)">💰 Financial</button>
+  <button class="tab-btn" onclick="showTab('tax',this)">🏛️ Tax 65+</button>
+  <button class="tab-btn" onclick="showTab('vehicle',this)">🚐 Honda Odyssey</button>
+  <button class="tab-btn" onclick="showTab('games',this)">🎲 Games</button>
+  <button class="tab-btn" onclick="showTab('calendar',this)">📅 Calendar</button>
+  <button class="tab-btn" onclick="showTab('realestate',this)">🏠 Real Estate</button>
+  <button class="tab-btn" onclick="showTab('beaches',this)">🏖️ Beaches</button>
+  <button class="tab-btn" onclick="showTab('brewing',this)">🍺 Brewing</button>
+  <button class="tab-btn" onclick="showTab('windowtint',this)">🪟 Window Tint</button>
+</div>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+<p class="progress-text" id="progressText">0% complete</p>
+
+<!-- ==================== WEATHER TAB ==================== -->
+<div class="tab-content active" id="tab-weather">
+  <div class="weather-container" id="weatherGrid">
+    <div class="weather-loading">☀️ Loading weather...</div>
+  </div>
+  <div class="weather-updated" id="weatherUpdated"></div>
+  <div style="text-align:center;margin-top:10px;">
+    <button onclick="loadWeather()" style="background:#0f3460;border:1px solid #333;color:#aaa;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.82em;">🔄 Refresh Weather</button>
+  </div>
+</div>
+
+<!-- ==================== HEALTH TAB ==================== -->
+<div class="tab-content" id="tab-health">
+
+  <div class="day-bar" id="healthDayBar"></div>
+
+  <!-- THYROID -->
+  <div class="section thyroid">
+    <div class="section-header">
+      <span class="section-time">FIRST THING</span>
+      <span class="section-title">🦋 Thyroid Medication</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_thyroid"><span class="cl" id="thyroidLabel">Take LEVOTHYROXINE 200 mcg with water (empty stomach)</span></li>
+    </ul>
+    <p class="note">⏰ Wait 30-60 min before eating or other meds</p>
+  </div>
+
+  <!-- MORNING MONITORING -->
+  <div class="section monitor">
+    <div class="section-header">
+      <span class="section-time">7 AM – 9 AM</span>
+      <span class="section-title">📊 Morning Monitoring</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_monWeight"><span class="cl">Record Weight</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_monSugar"><span class="cl">Record Blood Sugar</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_monBP"><span class="cl">Record Blood Pressure</span></li>
+    </ul>
+    <div class="monitor-grid">
+      <div class="monitor-card"><label>⚖️ Weight (lbs)</label><input type="text" id="h_valWeight" placeholder="---"></div>
+      <div class="monitor-card"><label>🩸 Blood Sugar</label><input type="text" id="h_valSugar" placeholder="---"></div>
+      <div class="monitor-card"><label>💓 Blood Pressure</label><input type="text" id="h_valBP" placeholder="---/---"></div>
+    </div>
+  </div>
+
+  <!-- BREAKFAST -->
+  <div class="section breakfast">
+    <div class="section-header">
+      <span class="section-time">7 AM – 9 AM</span>
+      <span class="section-title">🍌 Breakfast (Snack or BRAT Diet)</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_breakfast"><span class="cl">Eat breakfast — Bananas, Rice, Applesauce, Toast</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_breakfastCoffee"><span class="cl">☕ Coffee (wait 1hr after Levothyroxine)</span></li>
+    </ul>
+  </div>
+
+  <!-- AM RX -->
+  <div class="section am-rx">
+    <div class="section-header">
+      <span class="section-time">7 AM – 9 AM</span>
+      <span class="section-title">💊 AM Medications</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_rxGarlic"><span class="cl"><span class="rx-pill">Garlic</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxCoq10"><span class="cl"><span class="rx-pill">CoQ10</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxMetAM"><span class="cl"><span class="rx-pill">Metformin</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxMetopAM"><span class="cl"><span class="rx-pill">Metoprolol</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxLosAM"><span class="cl"><span class="rx-pill">Losartan</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxAmlAM"><span class="cl"><span class="rx-pill">Amlodipine</span></span></li>
+    </ul>
+  </div>
+
+  <!-- HEALTH CHECK -->
+  <div class="section health-check">
+    <div class="section-header">
+      <span class="section-time">9 AM</span>
+      <span class="section-title">🏥 Health Check for Modules</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_healthCheck"><span class="cl">Complete health check modules</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_weeklyEntry"><span class="cl">📅 Weekly entry: Weight, Blood Sugar & BP (once/week)</span></li>
+    </ul>
+  </div>
+
+  <!-- EXERCISE — DAILY -->
+  <div class="section exercise">
+    <div class="section-header">
+      <span class="section-time">DAILY</span>
+      <span class="section-title">🏃 Exercise<span class="florida-badge">🌴 FL thru Mar 17</span></span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_exPondWalk"><span class="cl">🔄 Pond Walk — 4 laps (3 miles)</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_exIsoCrunch"><span class="cl">💪 Isometric crunches while walking</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_exIsoGlute"><span class="cl">🍑 Contract buttock muscles while walking</span></li>
+    </ul>
+    <div class="miles-counter">
+      <div>
+        <span class="miles-label">TODAY'S MILES</span><br>
+        <span class="miles-val" id="todayMiles">0</span> <span class="miles-unit">mi</span>
+      </div>
+      <div style="border-left:1px solid #333; padding-left:12px;">
+        <span class="miles-label">THIS WEEK</span><br>
+        <span class="miles-val" id="weekMiles" style="color:#4ecdc4;">0</span> <span class="miles-unit">mi</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXERCISE — TRAILS & BEACH -->
+  <div class="section exercise">
+    <div class="section-header">
+      <span class="section-time">ROTATE</span>
+      <span class="section-title">🥾 Trails & Beach</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="2.5" id="h_exApogee"><span class="cl">🌿 Apoxee Wilderness Trail — 2.5 mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="1.5" id="h_exWako"><span class="cl">🦅 Wakodahatchee Wetlands — 0.75 mi (x2 = 1.5 mi)</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="1.5" id="h_exHypoluxo"><span class="cl">🌳 Hypoluxo Scrub Natural Area — 1.5 mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="2" id="h_exPineNorth"><span class="cl">🏘️ Walk Pine North 3 & 4 — 2 mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="1.5" id="h_exBeachWalk"><span class="cl">🏖️ Walk the beach — 1.5 mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="1.5" id="h_exGreenCay"><span class="cl">🦆 Green Cay Wetlands — 1.5 mi boardwalk</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="2.5" id="h_exOkeeheelee"><span class="cl">🌲 Okeeheelee Nature Center — 2.5 mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="5.5" id="h_exLakeTrail"><span class="cl">🌊 Palm Beach Lake Trail — 5.5 mi paved</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="3" id="h_exRiverbend"><span class="cl">🏞️ Riverbend Park, Jupiter — 3+ mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="1" id="h_exCustardApple"><span class="cl">🍃 Custard Apple Trail, Lake Worth — 1 mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="0.6" id="h_exDaggerwing"><span class="cl">🦋 Daggerwing Nature Center — 0.6 mi boardwalk</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="3.5" id="h_exManatee"><span class="cl">🐮 Manatee Lagoon + Flagler Dr walk — 3.5 mi</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="1" id="h_exRenegades"><span class="cl">🤠 <a href="https://renegadeswpb.com/" style="color:#f97316">Renegades</a> Line Dancing (Wed beginner 7-9pm)</span></li>
+      <li><input type="checkbox" class="health-cb trail-cb" data-miles="1" id="h_exBoonies"><span class="cl">🤠 <a href="https://www.yelp.com/biz/boonies-wild-west-saloon-loxahatchee-groves-2" style="color:#f97316">Boonies Wild West Saloon</a> — Loxahatchee</span></li>
+    </ul>
+  </div>
+
+  <!-- EXERCISE — POOL & SPORTS -->
+  <div class="section exercise">
+    <div class="section-header">
+      <span class="section-time">ACTIVE</span>
+      <span class="section-title">🏊 Pool & Sports</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_exPoolForward"><span class="cl">🏊 Pool — cross forward (breast stroke arms)</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_exPoolBackward"><span class="cl">🏊 Pool — cross backward (back stroke arms)</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_exPaddleBall"><span class="cl">🏓 Play Paddle Ball</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_exPickleBall"><span class="cl">🥒 Learn / Play Pickle Ball</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_exDiscGolf"><span class="cl">🥏 Learn Disc Golf</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>🏊 Pool Upper Body:</strong> Cross the pool using forearms forward (breast stroke motion) for chest & shoulders, then backward (back stroke motion) for back & triceps. Low impact, great for all your conditions.<br><br>
+      <strong>🥒 Pickle Ball:</strong> Huge in Florida! Most communities have free courts. Great cardio + social.<br><br>
+      <strong>🥏 Disc Golf:</strong> Walking + throwing = cardio + upper body. Most courses are free!
+    </div>
+  </div>
+
+  <!-- FOOD STRATEGY -->
+  <div class="section food-strategy">
+    <div class="section-header">
+      <span class="section-time">DAILY</span>
+      <span class="section-title">🥦 Food Strategy</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_foodRicePrep"><span class="cl">Cook rice → refrigerate overnight before eating</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_foodBrownRice"><span class="cl">Use brown rice (3x more fiber, lower sugar spike)</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_foodCauliflower"><span class="cl">Mix 50/50 cauliflower rice + brown rice</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_foodPortions"><span class="cl">Keep portions moderate</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>🧊 Cold Rice Science:</strong> Cooling rice overnight converts starch to <strong>resistant starch</strong> — your body absorbs 50-60% fewer calories. Even reheating keeps the benefit. Great for blood sugar!<br><br>
+      <strong>🍚 Mark's Power Rice Method:</strong><br>
+      Cook brown rice → fridge overnight → mix 50/50 with cauliflower rice → reheat. Maximum health benefit, minimum carbs.
+    </div>
+  </div>
+
+  <!-- LUNCH -->
+  <div class="section lunch">
+    <div class="section-header">
+      <span class="section-time">MIDDAY</span>
+      <span class="section-title">🍚 Lunch (Snack or BRAT Diet)</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_lunch"><span class="cl">Eat lunch — Snack or BRAT Diet</span></li>
+    </ul>
+  </div>
+
+  <!-- DINNER -->
+  <div class="section dinner">
+    <div class="section-header">
+      <span class="section-time">6 PM – 8 PM</span>
+      <span class="section-title">🍽️ Dinner (BRAT Diet)</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_dinner"><span class="cl">Eat dinner — BRAT Diet</span></li>
+    </ul>
+  </div>
+
+  <!-- PM RX -->
+  <div class="section pm-rx">
+    <div class="section-header">
+      <span class="section-time">7 PM – 9 PM</span>
+      <span class="section-title">💊 PM Medications</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_rxAspirin"><span class="cl"><span class="rx-pill">Aspirin 81mg</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxB12"><span class="cl"><span class="rx-pill">B12</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxMetPM"><span class="cl"><span class="rx-pill">Metformin</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxMetopPM"><span class="cl"><span class="rx-pill">Metoprolol</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxLosPM"><span class="cl"><span class="rx-pill">Losartan</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxAmlPM"><span class="cl"><span class="rx-pill">Amlodipine</span></span></li>
+      <li><input type="checkbox" class="health-cb" id="h_rxAtor"><span class="cl"><span class="rx-pill">Atorvastatin</span></span></li>
+    </ul>
+  </div>
+
+  <!-- ALCOHOL TRACKER -->
+  <div class="section alcohol">
+    <div class="section-header">
+      <span class="section-time">DAILY TRACKER</span>
+      <span class="section-title">🍷 Alcohol Strategy</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_alcNoBeach"><span class="cl">No drinking on the beach</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_alcTea"><span class="cl">Drink homemade iced black tea instead</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_alcSober"><span class="cl">✅ Alcohol-free today</span></li>
+    </ul>
+    <p style="font-size:0.82em; color:#aaa; margin-top:8px;">If drinking: Red wine over ice only 🍷</p>
+    <div class="alcohol-tracker" id="alcTracker"></div>
+    <p class="alc-score" id="alcScore"></p>
+    <div class="info-box">
+      <strong>🍷 Red Wine Over Ice:</strong> Smart choice — dilutes alcohol, slows consumption, adds hydration. Red wine has resveratrol (heart-healthy antioxidant). But with Metformin + BP meds, less is always better.<br><br>
+      <strong>🎯 Goal:</strong> 5+ alcohol-free days per week
+    </div>
+  </div>
+
+  <!-- ICED TEA RECIPE -->
+  <div class="section tea-recipe">
+    <div class="section-header">
+      <span class="section-title">🫖 Mark's Iced Black Tea Recipe</span>
+    </div>
+    <div class="recipe-step"><span class="step-num">1</span><span>Boil water, steep 4-5 black tea bags for 5 min</span></div>
+    <div class="recipe-step"><span class="step-num">2</span><span>Remove bags, let cool slightly</span></div>
+    <div class="recipe-step"><span class="step-num">3</span><span>Pour over ice in a pitcher</span></div>
+    <div class="recipe-step"><span class="step-num">4</span><span>Add lemon slices (optional)</span></div>
+    <div class="recipe-step"><span class="step-num">5</span><span>Refrigerate — drink all day</span></div>
+    <div class="recipe-step"><span class="step-num">6</span><span><strong>NO sugar</strong> — taste buds adjust in ~1 week</span></div>
+    <p class="tip">✅ Zero calories • Antioxidants • Lowers BP • Better than any alcohol</p>
+  </div>
+
+  <!-- COFFEE TRACKER -->
+  <div class="section coffee">
+    <div class="section-header">
+      <span class="section-time">DAILY TRACKER</span>
+      <span class="section-title">☕ Coffee Tracker</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_coffee1"><span class="cl">☕ Cup 1</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_coffee2"><span class="cl">☕ Cup 2</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_coffee3"><span class="cl">☕ Cup 3</span></li>
+      <li><input type="checkbox" class="health-cb" id="h_coffee4"><span class="cl">☕ Cup 4 (try to stop here or less)</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>☕ Coffee & Your Conditions:</strong><br><br>
+      <strong>✅ Good news:</strong> 1-3 cups/day can lower type 2 diabetes risk and is linked to heart health benefits.<br><br>
+      <strong>⚠️ Watch out:</strong><br>
+      • Caffeine can <strong>raise blood pressure</strong> temporarily — important with your BP meds<br>
+      • Metoprolol + caffeine can cancel each other out<br>
+      • Don't drink coffee within <strong>1 hour of taking Levothyroxine</strong> — it blocks absorption<br>
+      • No coffee after <strong>2 PM</strong> — protects your sleep (melatonin works better)<br><br>
+      <strong>🎯 Goal:</strong> 2-3 cups max, black or with minimal sugar. No cream = fewer calories.
+    </div>
+  </div>
+
+  <!-- BEDTIME -->
+  <div class="section bedtime">
+    <div class="section-header">
+      <span class="section-time">BEDTIME</span>
+      <span class="section-title">😴 Bedtime</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="health-cb" id="h_melatonin"><span class="cl">Take 2 Melatonin Gummies</span></li>
+    </ul>
+  </div>
+
+  <div class="save-row">
+    <button class="save-btn" onclick="saveHealth()">💾 Save Health Progress</button>
+    <button class="reset-btn" onclick="resetHealth()">🔄</button>
+  </div>
+  <p class="saved-msg" id="healthSavedMsg">✅ Saved!</p>
+</div>
+
+<!-- ==================== FINANCIAL TAB ==================== -->
+<div class="tab-content" id="tab-financial">
+
+  <!-- INSURANCE -->
+  <div class="section reminder">
+    <div class="section-header">
+      <span class="section-time">TO DO</span>
+      <span class="section-title">🏠 Castle Key Insurance / Allstate — Pine Ridge North, Villa H, 611 Sea Pine Way</span>
+      <span class="badge urgent">ACTION NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="insCall"><span class="cl">Call Castle Key Insurance (part of Allstate)</span></li>
+      <li><input type="checkbox" class="task-cb" id="insAsk"><span class="cl">Ask about condo insurance — Villa H, 611 Sea Pine Way, Pine Ridge North</span></li>
+      <li><input type="checkbox" class="task-cb" id="insReview"><span class="cl">Review coverage details & premiums</span></li>
+      <li><input type="checkbox" class="task-cb" id="insConfirm"><span class="cl">Confirm policy is current & adequate</span></li>
+    </ul>
+  </div>
+
+  <!-- VERIZON -->
+  <div class="section reminder">
+    <div class="section-header">
+      <span class="section-time">TO DO</span>
+      <span class="section-title">📱 Verizon — Sonim Flip Phone Bills</span>
+      <span class="badge urgent">ACTION NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="vzGoStore"><span class="cl">Go to Verizon Store OR call 1-800-922-0204</span></li>
+      <li><input type="checkbox" class="task-cb" id="vzGetBills"><span class="cl">Get bills for (617) 835-7645 (Sonim Flip phone) back to <strong>January 2021</strong></span></li>
+      <li><input type="checkbox" class="task-cb" id="vzOnline"><span class="cl">Try MyVerizon app/website — may have 36 months of bills online</span></li>
+      <li><input type="checkbox" class="task-cb" id="vzReview"><span class="cl">Review all bills for accuracy</span></li>
+    </ul>
+    <p class="note">💡 Bring ID & account info to the store. Phone number: (617) 835-7645. Need bills from Jan 2021 to present. You can also try: MyVerizon app → Account → Bill → View Bill → change dates.</p>
+  </div>
+
+  <!-- EASTERN BANK -->
+  <div class="section financial">
+    <div class="section-header">
+      <span class="section-time">LINDA TO CALL</span>
+      <span class="section-title">🏦 Eastern Bank — Joan Widdison Account</span>
+      <span class="badge urgent">ACTION NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="ebRemindLinda"><span class="cl">Remind Linda to call Eastern Bank</span></li>
+      <li><input type="checkbox" class="task-cb" id="ebCloseAcct"><span class="cl">1. Close account with $151 balance</span></li>
+      <li><input type="checkbox" class="task-cb" id="ebChangeAddr"><span class="cl">2. Change address — send statements to:<br><strong>75 East Elm Ave, Quincy</strong> (Joan Widdison Account)</span></li>
+      <li><input type="checkbox" class="task-cb" id="ebConfirm"><span class="cl">Confirm both changes completed</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>📞 Linda needs to call for:</strong><br>
+      ① Close the account (get the $151 balance sent as check or transferred)<br>
+      ② Change mailing address for Joan Widdison's account to <strong>75 East Elm Ave, Quincy</strong>
+    </div>
+  </div>
+
+  <!-- SANTANDER BANK -->
+  <div class="section financial">
+    <div class="section-header">
+      <span class="section-time">LINDA TO CALL</span>
+      <span class="section-title">🏦 Santander Bank — Joan Widdison Account</span>
+      <span class="badge urgent">ACTION NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="sanRemindLinda"><span class="cl">Remind Linda to call Santander Bank</span></li>
+      <li><input type="checkbox" class="task-cb" id="sanChangeAddr"><span class="cl">Change statement address to East Elm for Joan Account</span></li>
+      <li><input type="checkbox" class="task-cb" id="sanConfirm"><span class="cl">Confirm address change completed</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>📞 Linda needs to call for:</strong><br>
+      Change mailing address for Joan Widdison's account statements to <strong>75 East Elm Ave, Quincy</strong>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== TAX 65+ TAB ==================== -->
+<div class="tab-content" id="tab-tax">
+
+  <div class="section financial">
+    <div class="section-header">
+      <span class="section-time">🆕 NEW 2025</span>
+      <span class="section-title">💵 $6,000 Senior Bonus Deduction</span>
+    </div>
+    <div class="info-box">
+      <strong>What:</strong> Brand new extra $6,000 deduction for age 65+<br>
+      <strong>Income limit:</strong> Phases out above $75K (single) / $150K (married)<br>
+      <strong>How to claim:</strong> Check the "65 or older" box on Form 1040 — IRS adds it automatically<br>
+      <strong>Available:</strong> 2025 through 2028<br>
+      <strong>💰 Savings:</strong> Could save $1,000+ in taxes
+    </div>
+  </div>
+
+  <div class="section financial">
+    <div class="section-header">
+      <span class="section-time">AUTOMATIC</span>
+      <span class="section-title">📋 Higher Standard Deduction at 65+</span>
+    </div>
+    <div class="info-box">
+      <strong>Single (under 65):</strong> $15,350<br>
+      <strong>Single (65+):</strong> $17,350 (+$2,000 extra)<br>
+      <strong>Married both 65+:</strong> $32,300 (+$3,200 extra)<br><br>
+      <strong>Combined with $6K bonus:</strong> Single 65+ could deduct up to <strong>$23,750!</strong>
+    </div>
+  </div>
+
+  <div class="section financial">
+    <div class="section-header">
+      <span class="section-time">SCHEDULE R</span>
+      <span class="section-title">🎟️ Credit for Elderly or Disabled</span>
+    </div>
+    <div class="info-box">
+      <strong>What:</strong> Direct tax CREDIT (reduces your bill, not just income)<br>
+      <strong>Amount:</strong> $3,750 – $7,500<br>
+      <strong>Qualify if:</strong> Age 65+ AND<br>
+      • Single AGI under ~$17,500<br>
+      • Married AGI under ~$25,000<br>
+      • Nontaxable SS under $5,000 (single)<br>
+      <strong>File:</strong> Schedule R (Form 1040)<br>
+      ⚠️ Higher income/SS may disqualify you — ask your tax preparer
+    </div>
+  </div>
+
+  <div class="section reminder">
+    <div class="section-header">
+      <span class="section-time">IMPORTANT</span>
+      <span class="section-title">💰 Social Security — How Much Is Taxed?</span>
+    </div>
+    <div class="info-box">
+      <strong>Your total income*</strong> determines how much SS is taxable:<br><br>
+      ✅ <strong>Under $25,000</strong> (single) → <strong>0% taxed</strong><br>
+      ⚠️ <strong>$25K – $34K</strong> → Up to <strong>50%</strong> of SS taxable<br>
+      🔴 <strong>Over $34,000</strong> → Up to <strong>85%</strong> of SS taxable<br><br>
+      <em>*Total income = AGI + nontaxable interest + ½ of Social Security</em>
+    </div>
+  </div>
+
+  <div class="section financial">
+    <div class="section-header">
+      <span class="section-time">ALSO</span>
+      <span class="section-title">📝 Other 65+ Benefits</span>
+    </div>
+    <div class="info-box">
+      • Use <strong>Form 1040-SR</strong> — large print, easier to read<br>
+      • <strong>Medical expense deduction</strong> — deduct costs over 7.5% of AGI<br>
+      • <strong>No penalty</strong> on IRA/401k withdrawals (penalty-free after 59½)<br>
+      • Required minimum distributions start at age <strong>73</strong><br>
+      • Massachusetts may have <strong>additional state benefits</strong>
+    </div>
+  </div>
+
+  <div class="section urgent">
+    <div class="section-header">
+      <span class="section-time">ACTION</span>
+      <span class="section-title">✅ Tax To-Do List</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="taxPreparer"><span class="cl">Talk to a tax preparer about turning 65 benefits</span></li>
+      <li><input type="checkbox" class="task-cb" id="taxSS"><span class="cl">Get Social Security benefit statement (SSA-1099)</span></li>
+      <li><input type="checkbox" class="task-cb" id="tax1040SR"><span class="cl">Use Form 1040-SR when filing</span></li>
+      <li><input type="checkbox" class="task-cb" id="tax65Box"><span class="cl">Check "65 or older" box for $6K bonus deduction</span></li>
+      <li><input type="checkbox" class="task-cb" id="taxScheduleR"><span class="cl">Ask preparer about Schedule R (elderly credit)</span></li>
+      <li><input type="checkbox" class="task-cb" id="taxMedical"><span class="cl">Gather medical receipts for medical expense deduction</span></li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ==================== VEHICLE TAB ==================== -->
+<div class="tab-content" id="tab-vehicle">
+
+  <div class="vehicle-img">🚐</div>
+
+  <!-- BRAKE SWITCH -->
+  <div class="section urgent">
+    <div class="section-header">
+      <span class="section-time">REPAIR</span>
+      <span class="section-title">🔴 Brake Light Switch Malfunction</span>
+      <span class="badge urgent">FIX NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="carBrakeDiag"><span class="cl">Diagnose brake light switch issue</span></li>
+      <li><input type="checkbox" class="task-cb" id="carBrakePart"><span class="cl">Get replacement brake light switch</span></li>
+      <li><input type="checkbox" class="task-cb" id="carBrakeInstall"><span class="cl">Install new brake light switch</span></li>
+      <li><input type="checkbox" class="task-cb" id="carBrakeTest"><span class="cl">Test — confirm brake lights turn off properly</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>⚠️ Problem:</strong> Brake lights occasionally stay on (even when brake not pressed)<br><br>
+      <strong>Likely cause:</strong> Faulty brake light switch on the brake pedal. Common on 2000 Odyssey.<br><br>
+      <strong>Part:</strong> Brake light switch (mounts on brake pedal bracket) — <span class="cost-est">~$10-20 part</span><br>
+      <strong>DIY:</strong> Easy fix — unplug old switch, unscrew, install new one, adjust until lights work correctly.<br>
+      <strong>Shop repair:</strong> <span class="cost-est">~$50-100 labor</span>
+    </div>
+    <p class="note">⚡ Don't ignore this — stuck brake lights will drain the battery AND can cause a ticket.</p>
+    <div class="info-box" style="border-left:3px solid #4ecdc4;margin-top:8px;">
+      <strong>📱 3/10:</strong> Texted mechanic <strong>Enrique</strong> about bringing in Honda for brake light switch replacement. ⏳ Waiting for reply.
+    </div>
+  </div>
+
+  <!-- BATTERY DISCONNECT SWITCH -->
+  <div class="section vehicle">
+    <div class="section-header">
+      <span class="section-time">REPAIR</span>
+      <span class="section-title">🔋 Battery Disconnect Switch</span>
+      <span class="badge todo">TO DO</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="carBattBuy"><span class="cl">Buy cheap turn-knob battery disconnect switch</span></li>
+      <li><input type="checkbox" class="task-cb" id="carBattInstall"><span class="cl">Install on positive battery terminal</span></li>
+      <li><input type="checkbox" class="task-cb" id="carBattTest"><span class="cl">Test — turn to disconnect, confirm power cuts off</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>🔋 What:</strong> Top-post turn-knob switch — replaces the positive terminal clamp. Twist to disconnect battery, twist back to reconnect.<br><br>
+      <strong>💰 Cost:</strong> <span class="cost-est">~$8-15</span> at AutoZone, O'Reilly, NAPA, or Amazon<br><br>
+      <strong>🔧 Install:</strong> Remove positive cable → attach switch to terminal → attach cable to switch. 5-minute job, no tools needed beyond a wrench.<br><br>
+      <strong>💡 Why:</strong> Prevents battery drain from stuck brake lights or parasitic draw when parked. Easy on/off without disconnecting cables.
+    </div>
+  </div>
+
+  <!-- A/C RECHARGE -->
+  <div class="section vehicle">
+    <div class="section-header">
+      <span class="section-time">REPAIR</span>
+      <span class="section-title">❄️ A/C System Recharge</span>
+      <span class="badge todo">TO DO</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="carACCheck"><span class="cl">Check if A/C blows warm or no cold air</span></li>
+      <li><input type="checkbox" class="task-cb" id="carACRecharge"><span class="cl">Get A/C system recharged</span></li>
+      <li><input type="checkbox" class="task-cb" id="carACLeak"><span class="cl">Check for refrigerant leaks</span></li>
+      <li><input type="checkbox" class="task-cb" id="carACTest"><span class="cl">Test — confirm cold air blowing</span></li>
+    </ul>
+    <div class="info-box">
+      <strong>❄️ Options:</strong><br><br>
+      <strong>DIY:</strong> Buy a recharge kit (R-134a) from AutoZone/Walmart — <span class="cost-est">~$30-50</span>. Hook up to low-pressure port, follow gauge instructions.<br><br>
+      <strong>Shop:</strong> Professional A/C recharge with leak check — <span class="cost-est">~$150-250</span><br><br>
+      <strong>⚠️ Note:</strong> On a 2000 Odyssey (25 years old), if the system has a leak, a simple recharge may only last a few weeks. A shop can dye-test for leaks.
+    </div>
+    <p class="note">🌴 You're in Florida — A/C is a must! Get this done before the heat kicks up in March.</p>
+  </div>
+
+  <!-- TRANSMISSION — SHUDDER FIXX -->
+  <div class="section vehicle">
+    <div class="section-header">
+      <span class="section-time">MAINTENANCE</span>
+      <span class="section-title">⚙️ Transmission Shudder Fix</span>
+      <span class="badge todo">RECOMMENDED</span>
+    </div>
+    <div class="info-box">
+      <strong>⚠️ The 2000 Odyssey's #1 weakness:</strong> The transmission. Torque converter shudder is extremely common on this generation.<br><br>
+
+      <strong style="color:#22c55e;">🏆 RECOMMENDED: Lubegard Instant Shudder Fixx</strong><br>
+      • Friction modifier — works WITH the fluid (doesn't thicken it)<br>
+      • Specifically designed for torque converter shudder<br>
+      • Highly rated on Honda/Odyssey forums (OdyClub)<br>
+      • Small 2 oz tube — won't alter fluid volume or pressure<br>
+      • Often works within a few miles of driving<br>
+      • <span class="cost-est">~$10-12 at AutoZone</span><br><br>
+
+      <strong style="color:#ef4444;">🚫 AVOID: Lucas Transmission Fix</strong><br>
+      • Thickens ATF — Honda transmissions are sensitive to viscosity<br>
+      • Can increase pressure and accelerate wear on fragile clutch packs<br>
+      • Honda forums consistently warn against it for Odysseys<br>
+      • Masks symptoms while damage continues<br><br>
+
+      <strong>Best combo for max life:</strong><br>
+      1. Drain & fill with genuine <strong>Honda ATF-Z1</strong> (the ONLY fluid for this van)<br>
+      2. Add 1 tube of Lubegard Instant Shudder Fixx<br>
+      3. Repeat drain & fill 2 more times (1 week apart) to replace ~80% of old fluid<br>
+      4. Add Shudder Fixx after final fill<br><br>
+
+      <strong>⚠️ Never use generic "compatible" ATF.</strong> Honda transmissions require Honda ATF-Z1 — anything else accelerates failure.
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="carTransBuy"><span class="cl">Buy Lubegard Instant Shudder Fixx at AutoZone (~$10)</span></li>
+      <li><input type="checkbox" class="task-cb" id="carTransATF"><span class="cl">Buy 4 quarts Honda ATF-Z1 (for drain & fill)</span></li>
+      <li><input type="checkbox" class="task-cb" id="carTransDrain1"><span class="cl">Drain & fill #1 + add Shudder Fixx</span></li>
+      <li><input type="checkbox" class="task-cb" id="carTransDrive1"><span class="cl">Drive 50-100 miles</span></li>
+      <li><input type="checkbox" class="task-cb" id="carTransDrain2"><span class="cl">Drain & fill #2 (1 week later)</span></li>
+      <li><input type="checkbox" class="task-cb" id="carTransDrain3"><span class="cl">Drain & fill #3 + final Shudder Fixx tube</span></li>
+      <li><input type="checkbox" class="task-cb" id="carTransTest"><span class="cl">Test — shudder gone? Shifts smooth?</span></li>
+    </ul>
+    <p class="note">💡 Researched 3/14/2026 at Flanigan's. Joe's APA inspired the research AND the brew day! 🍺</p>
+  </div>
+
+</div>
+
+<!-- ==================== GAMES TAB ==================== -->
+<div class="tab-content" id="tab-games">
+
+  <!-- NIGHT AT THE RACES — CARD GAME -->
+  <div class="section" style="border-left-color:#f59e0b;">
+    <div class="section-header">
+      <span class="section-time">CARD GAME</span>
+      <span class="section-title">🏇 Night at the Races — Card Version</span>
+    </div>
+    <div class="info-box">
+      <strong>What you need:</strong> Standard deck of cards, play money or chips<br><br>
+      <strong>Setup:</strong><br>
+      1. Remove the <strong>4 Aces</strong> — these are your "horses" (♥️ ♦️ ♠️ ♣️)<br>
+      2. Line up the 4 Aces at a <strong>starting line</strong><br>
+      3. Deal <strong>7-8 cards face-down</strong> in a column beside them — this is the "track"<br>
+      4. Give each player equal play money for betting<br><br>
+      <strong>How to Play:</strong><br>
+      1. Each player <strong>places bets</strong> on which suit (horse) will win<br>
+      2. A dealer/announcer flips cards from the remaining deck one at a time<br>
+      3. When a card is flipped, the <strong>Ace of that suit moves forward one space</strong><br>
+      4. When a horse passes a face-down track card, <strong>flip it</strong> — that suit's horse moves <strong>BACK one space</strong> (adds drama!)<br>
+      5. <strong>First Ace across the finish line WINS</strong> 🏆<br><br>
+      <strong>Tips:</strong><br>
+      • Have someone be the <strong>race announcer</strong> — call it like a real horse race!<br>
+      • "And Hearts is pulling ahead on the outside!"<br>
+      • Play multiple races throughout the night<br>
+      • Use poker chips or play money for betting
+    </div>
+  </div>
+
+  <!-- NIGHT AT THE RACES — DVD/VIDEO VERSION -->
+  <div class="section" style="border-left-color:#8b5cf6;">
+    <div class="section-header">
+      <span class="section-time">VIDEO VERSION</span>
+      <span class="section-title">🎬 Night at the Races — DVD/Video Version</span>
+    </div>
+    <div class="info-box">
+      <strong>What:</strong> Pre-recorded horse race videos — players bet on numbered horses and watch real race footage<br><br>
+      <strong>Provider:</strong> A Nite At The Races, Inc.<br>
+      <strong>Location:</strong> Jupiter, FL<br>
+      <strong>Phone:</strong> 📞 <a href="tel:5617473900" style="color:#00d4ff;">561-747-3900</a><br>
+      <strong>Website:</strong> <a href="https://www.anightattheraces.com" style="color:#00d4ff;" target="_blank">anightattheraces.com</a><br><br>
+      <strong>How it works:</strong><br>
+      1. Rent or buy a set of race videos (DVD or digital)<br>
+      2. Each race has numbered horses<br>
+      3. Players place bets on horse numbers before each race<br>
+      4. Play the video — watch the race unfold on screen<br>
+      5. Winners collect their bets! 🎉<br><br>
+      <strong>Great for:</strong> Charity fundraisers, parties, community events, game nights
+    </div>
+    <p class="note">🌴 They're based in Jupiter, FL — not far from you in Greenacres!</p>
+  </div>
+
+  <!-- SAND BLASTER PADDLE BALL -->
+  <div class="section" style="border-left-color:#22d3ee;">
+    <div class="section-header">
+      <span class="section-time">BEACH GAME</span>
+      <span class="section-title">🏖️ Sand Blaster — Paddle Ball</span>
+    </div>
+    <div class="info-box">
+      <strong>Equipment:</strong> 2 wooden paddles + 1 rubber ball<br><br>
+      <strong>Setup (2 players):</strong><br>
+      • Stand <strong>15-20 feet apart</strong> (no official court, no net needed)<br>
+      • Any open space — beach, yard, driveway<br>
+      • Start closer (~10 ft) and move apart as you improve<br><br>
+
+      <strong>🎯 Cooperative Mode (Classic):</strong><br>
+      • Hit the ball back and forth — keep it in the air!<br>
+      • <strong>ONE hit to return</strong> — no double bouncing on paddle<br>
+      • Count consecutive hits — try to beat your record!<br>
+      • Ball touches the ground = start over<br><br>
+
+      <strong>🏆 Competitive Mode (Scored):</strong><br>
+      • If one player lets the ball hit the ground, the OTHER scores a point<br>
+      • <strong>First to 5 points wins</strong> the round<br>
+      • Stand further apart to increase difficulty<br><br>
+
+      <strong>🔄 Circle Game Variant (2+ players):</strong><br>
+      • Players CAN bounce ball on their OWN paddle multiple times before passing<br>
+      • Start with 2 self-bounces, then increase by 1 each turn<br>
+      • Drop the ball = lose a point. Lose 5 points = eliminated<br><br>
+
+      <strong>Tips:</strong><br>
+      • Angle paddle slightly upward for easier returns<br>
+      • Soft controlled hits > smashing it<br>
+      • The rubber ball is bouncy — less is more!
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== CALENDAR TAB ==================== -->
+<div class="tab-content" id="tab-calendar">
+
+  <!-- JUNE -->
+  <div class="section" data-month="6" style="border-left-color:#fbbf24;">
+    <div class="section-header">
+      <span class="section-time">JUNE 2026</span>
+      <span class="section-title">📅 June Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Fri, Jun 19</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">✊ <strong>Juneteenth</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Sun, Jun 21</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">👔 <strong>Father's Day</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" data-month="7" style="border-left-color:#00d4ff;">
+    <div class="section-header">
+      <span class="section-time">JULY 2026</span>
+      <span class="section-title">📅 July Events</span>
+    </div>
+
+    <div style="margin-top:8px;">
+
+      <!-- July 4 -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Sat, Jul 4</strong>
+          <span style="font-size:0.75em;background:#ef4444;padding:2px 8px;border-radius:4px;color:#fff;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🇺🇸🎆 <strong>Independence Day — Happy 250th America!</strong></div>
+      </div>
+
+      <!-- July 10 -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f97316;">📅 Fri, July 10</strong>
+          <span style="font-size:0.75em;background:#16213e;padding:2px 8px;border-radius:4px;color:#aaa;">⛵ Tall Ships Begin</span>
+        </div>
+        <ul class="checklist">
+          <li><input type="checkbox" class="task-cb" id="calJul10volunteer"><span class="cl">Sign up to volunteer — <a href="https://www.sailboston.com/volunteer/" style="color:#00d4ff;" target="_blank">sailboston.com/volunteer</a></span></li>
+        </ul>
+      </div>
+
+      <!-- July 11 -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f97316;">📅 Sat, July 11</strong>
+          <span style="font-size:0.75em;background:#ef4444;padding:2px 8px;border-radius:4px;color:#fff;">🎆 FIREWORKS</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎆 <strong>Boston Harbor Fireworks — 9:00 PM</strong><br>
+          <span style="color:#aaa;font-size:0.85em;">Sail Boston® Opening Celebration — Tall Ships arrival</span>
+        </div>
+      </div>
+
+      <!-- July 12-13 -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Sun-Mon, July 12-13</strong>
+          <span style="font-size:0.75em;background:#16213e;padding:2px 8px;border-radius:4px;color:#aaa;">⛵ Tall Ships Week</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;color:#aaa;">
+          Ship tours, educational activities, cultural exchange at Boston Harbor
+        </div>
+      </div>
+
+      <!-- July 14 — BIRTHDAY + BASTILLE DAY -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #f97316;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f97316;">📅 Tue, July 14</strong>
+          <span style="font-size:0.75em;background:#f97316;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY!</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Happy Birthday, Mark!</strong> 🇫🇷 <strong>Bastille Day!</strong><br>
+          <span style="color:#aaa;font-size:0.85em;">French National Day — Storming of the Bastille, 1789</span>
+        </div>
+        <ul class="checklist" style="margin-top:8px;">
+          <li><input type="checkbox" class="task-cb" id="calJul14volunteer"><span class="cl">🇫🇷 Volunteer at Boston French Library — Bastille Day Festivities<br><span style="color:#aaa;font-size:0.85em;">French Library: <a href="https://frenchlibrary.org/volunteer/" style="color:#00d4ff;" target="_blank">frenchlibrary.org/volunteer</a> — Sign up for Bastille Day shifts (earn points toward free membership!)</span></span></li>
+        </ul>
+      </div>
+
+      <!-- July 15 -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f97316;">📅 Wed, July 15</strong>
+          <span style="font-size:0.75em;background:#ef4444;padding:2px 8px;border-radius:4px;color:#fff;">🎆 FIREWORKS</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎆 <strong>Boston Harbor Fireworks — 9:00 PM</strong><br>
+          <span style="color:#aaa;font-size:0.85em;">Sail Boston® Closing Celebration — Tall Ships departure</span>
+        </div>
+      </div>
+
+      <!-- July 16-17 -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Thu-Fri, July 16-17</strong>
+          <span style="font-size:0.75em;background:#16213e;padding:2px 8px;border-radius:4px;color:#aaa;">⛵ Final Days</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;color:#aaa;">
+          Last chance for ship tours & activities
+        </div>
+      </div>
+
+      <!-- July 22 -->
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Wed, July 22</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Kristen's Birthday!</strong> 🎉
+        </div>
+      </div>
+
+    </div>
+    </div>
+  </div>
+
+  <!-- JANUARY -->
+  <div class="section" data-month="1" style="border-left-color:#3b82f6;">
+    <div class="section-header">
+      <span class="section-time">JANUARY 2026</span>
+      <span class="section-title">📅 January Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Thu, Jan 1</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🎉 <strong>New Year's Day</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Tue, Jan 13</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Nate Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Mon, Jan 19</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">✊ <strong>Martin Luther King Jr. Day</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEBRUARY -->
+  <div class="section" data-month="2" style="border-left-color:#ef4444;">
+    <div class="section-header">
+      <span class="section-time">FEBRUARY 2026</span>
+      <span class="section-title">📅 February Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#ef4444;">📅 Sat, Feb 14</strong>
+          <span style="font-size:0.75em;background:#ef4444;padding:2px 8px;border-radius:4px;color:#fff;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">💝 <strong>Valentine's Day</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #ef4444;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#ef4444;">📅 Sat, Feb 14</strong>
+          <span style="font-size:0.75em;background:#ef4444;padding:2px 8px;border-radius:4px;color:#fff;">💕 ANNIVERSARY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          💕 <strong>Mark & Linda — First Date Anniversary!</strong> ❤️<br>
+          <span style="color:#aaa;font-size:0.85em;">Valentine's Day + the day it all started!</span>
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Sun, Feb 15</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Blair Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #f5a623;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f5a623;">📅 Sun, Feb 15</strong>
+          <span style="font-size:0.75em;background:#f5a623;padding:2px 8px;border-radius:4px;color:#1a1a2e;">💍 ANNIVERSARY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          💍 <strong>Bob & Marion's Anniversary!</strong> ❤️
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Thu, Feb 19</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Aurora Johnson's Birthday!</strong> 🎉🦄
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Mon, Feb 16</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🇺🇸 <strong>Presidents' Day</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARCH -->
+  <div class="section" data-month="3" style="border-left-color:#4ecdc4;">
+    <div class="section-header">
+      <span class="section-time">MARCH 2026</span>
+      <span class="section-title">📅 March Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Tue, Mar 3</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎳 BOCCE</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎳 <strong>Bocce — 8:30 - 11:30 AM</strong><br>
+          <span style="color:#4ecdc4;font-size:0.85em;">🏆 Mark's Team 2 vs Jodi & Myra</span><br>
+          <span style="color:#4ecdc4;font-size:0.85em;">🏆 Linda's Team 10 plays</span>
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #f5a623;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f5a623;">📅 Wed, Mar 4</strong>
+          <span style="font-size:0.75em;background:#f5a623;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🚗 RENTAL</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🚗 <strong>Pick up Hertz Rent-a-Car — PBI Airport</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Wed, Mar 4</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎳 BOCCE</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🎳 <strong>Bocce Pick Up Game</strong> — 3:00 PM</div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:2px solid #4ecdc4;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Thu, Mar 5</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">📝 DAY LOG</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🏖️ <strong>Lowdermilk Beach Park</strong><br>
+          <span style="color:#aaa;font-size:0.85em;">A pristine 1,000-foot white-sand beach with tiki huts, sea oats, dunes, and gentle Gulf waves. Picnic areas, volleyball courts, and beautiful sunset views.</span><br>
+          <span style="color:#3b82f6;font-size:0.85em;">🌊 Water temp: ~70°F (21°C) — cool for swimming! About 2°F below normal for early March.</span><br>
+          <span style="color:#ef4444;font-size:0.85em;">🪰 <strong>Biting flies (No-See-Ums)</strong> — made beach uncomfortable. These are <em>biting midges</em> (Ceratopogonidae), tiny flies less than 1/8 inch long. Common on SW Florida beaches, worst at dawn/dusk and on calm days. Tip: lemon eucalyptus spray helps!</span><br><br>
+          🍽️ <strong>Ate lunch & drank tea</strong> (no alcohol) — walked the beach<br><br>
+          🛒 <strong>Stopped at Publix</strong> — picked up beer & whipping cream<br><br>
+          ✈️ <strong>Met Bob & Alan at airport</strong> — returned Hertz rental car<br><br>
+          🏠 <strong>Drove to Alan & Ava's house</strong> (Lemans Dr, Naples)<br>
+          <span style="color:#aaa;font-size:0.85em;">🍺 Hung out on screened-in porch. Mark had Michelob Ultras on ice. Linda had wine.</span><br><br>
+          🍗 <strong>Dinner — Ava's BBQ:</strong><br>
+          <span style="color:#aaa;font-size:0.85em;">• BBQ Chicken Drumsticks & Thighs</span><br>
+          <span style="color:#aaa;font-size:0.85em;">• Grilled Broccolini</span><br>
+          <span style="color:#aaa;font-size:0.85em;">• 🍓 Strawberry Shortcake with freshly whipped cream for dessert!</span><br><br>
+          😴 <strong>Bed at 10 PM</strong> — air bed in office
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #4ecdc4;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Fri-Sun, Mar 6-8</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">👥 VISIT</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          👥 <strong>Naples Area Visits</strong><br>
+          <span style="color:#aaa;font-size:0.85em;">• <strong>Mar 7:</strong> 🎨 Fine Arts & Craft Fair — Cambier Park, 10 AM - 4 PM (FREE)</span><br>
+          <span style="color:#aaa;font-size:0.85em;">• Visit Bob & Marian</span><br>
+          <span style="color:#aaa;font-size:0.85em;">• See John & wife</span>
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #4ecdc4;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Sat-Sun, Mar 8-9</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">👥 VISIT</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">👥 <strong>Bob & Marian Visit Pine Ridge North 2</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Tue, Mar 10</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎳 BOCCE</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎳 <strong>Linda's Bocce Game — 10:00 AM</strong><br>
+          <span style="color:#4ecdc4;font-size:0.85em;">⏰ Arrive by 9:30 AM</span><br><br>
+          🎳 <strong>Mark's Bocce Game — 10:30 AM</strong><br>
+          <span style="color:#4ecdc4;font-size:0.85em;">⏰ Be there by 9:30 to watch Linda play!</span>
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#3b82f6;">📅 Tue, Mar 10</strong>
+          <span style="font-size:0.75em;background:#3b82f6;padding:2px 8px;border-radius:4px;color:#fff;">🚗 TRAVEL</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🚗 <strong>Bob & Marian leave for Hobe Sound, FL</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Wed, Mar 11</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎳 BOCCE</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🎳 <strong>Bocce Pick Up Game</strong> — 3:00 PM</div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Sat, Mar 14</strong>
+          <span style="font-size:0.75em;background:#f97316;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🥧 FUN</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🥧 <strong>Pi Day!</strong> (3.14159...)</div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#22c55e;">📅 Tue, Mar 17</strong>
+          <span style="font-size:0.75em;background:#22c55e;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">☘️ <strong>St. Patrick's Day</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#4ecdc4;">📅 Tue, Mar 17</strong>
+          <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎳 BOCCE</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🎳 <strong>Bocce — Mark & Linda</strong> — 8:30 - 11:30 AM ☘️</div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #3b82f6;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#3b82f6;">📅 Tue, Mar 17</strong>
+          <span style="font-size:0.75em;background:#3b82f6;padding:2px 8px;border-radius:4px;color:#fff;">✈️ FLIGHT</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          ✈️ <strong>Mark & Linda Fly to Boston</strong> 🏠
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Sat, Mar 21</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🏊 PARTY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🏊 <strong>PRN2 Pool Party</strong> 🎉</div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:2px solid #f97316;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f97316;">📅 Sat, Mar 21 → Fri, Mar 27</strong>
+          <span style="font-size:0.75em;background:#f97316;padding:2px 8px;border-radius:4px;color:#fff;">🏖️ TIMESHARE</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🏖️ <strong>Timeshare Condo — Weston, FL</strong><br>
+          <span style="color:#aaa;font-size:0.85em;">📍 16461 Racquet Club Road, Weston, FL</span><br>
+          <span style="color:#aaa;font-size:0.85em;">📞 <a href="tel:19543849445" style="color:#00d4ff;">1 (954) 384-9445</a></span><br>
+          <span style="color:#4ecdc4;font-size:0.85em;">✅ Check-in: Mar 21 &nbsp;|&nbsp; 🚪 Check-out: Mar 27</span>
+        </div>
+      </div>
+
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #f5a623;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f5a623;">📅 Tue, Mar 17</strong>
+          <span style="font-size:0.75em;background:#f5a623;padding:2px 8px;border-radius:4px;color:#1a1a2e;">💍 ANNIVERSARY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          💍 <strong>Nick & Justine Johnson's Anniversary!</strong> ❤️<br>
+          <span style="color:#aaa;font-size:0.85em;">St. Paddy's Day anniversary! ☘️</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APRIL -->
+  <div class="section" data-month="4" style="border-left-color:#f472b6;">
+    <div class="section-header">
+      <span class="section-time">APRIL 2026</span>
+      <span class="section-title">📅 April Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Sun, Apr 5</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">✝️ <strong>Easter Sunday</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAY -->
+  <div class="section" data-month="5" style="border-left-color:#22c55e;">
+    <div class="section-header">
+      <span class="section-time">MAY 2026</span>
+      <span class="section-title">📅 May Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Tue, May 5</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:2px solid #22c55e;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#22c55e;">📅 Mon, May 4</strong>
+          <span style="font-size:0.75em;background:#22c55e;padding:2px 8px;border-radius:4px;color:#1a1a2e;">⭐ FAN DAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          ⚔️ <strong>Star Wars Day</strong> — May the 4th Be With You! 🌌<br>
+          <span style="color:#22c55e;font-size:0.85em;">Revenge of the 5th is tomorrow! 😈</span>
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Tue, May 5</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>London Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Sun, May 10</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Colton's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Sun, May 10</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">💐 <strong>Mother's Day</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Mon, May 25</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🇺🇸 <strong>Memorial Day</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUGUST -->
+  <div class="section" data-month="8" style="border-left-color:#f97316;">
+    <div class="section-header">
+      <span class="section-time">AUGUST 2026</span>
+      <span class="section-title">📅 August Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Mon, Aug 24</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Ernie Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Sun, Aug 30</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Carolina Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEPTEMBER -->
+  <div class="section" data-month="9" style="border-left-color:#3b82f6;">
+    <div class="section-header">
+      <span class="section-time">SEPTEMBER 2026</span>
+      <span class="section-title">📅 September Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Mon, Sep 7</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">💪 <strong>Labor Day</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Thu, Sep 24</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Wayne Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #f5a623;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f5a623;">📅 Tue, Sep 29</strong>
+          <span style="font-size:0.75em;background:#f5a623;padding:2px 8px;border-radius:4px;color:#1a1a2e;">💍 ANNIVERSARY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          💍 <strong>Mark & Linda's Wedding Anniversary!</strong> ❤️
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OCTOBER -->
+  <div class="section" data-month="10" style="border-left-color:#f59e0b;">
+    <div class="section-header">
+      <span class="section-time">OCTOBER 2026</span>
+      <span class="section-title">📅 October Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Wed, Oct 7</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Anna Pomereau's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #f5a623;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#f5a623;">📅 Mon, Oct 12</strong>
+          <span style="font-size:0.75em;background:#f5a623;padding:2px 8px;border-radius:4px;color:#1a1a2e;">💍 ANNIVERSARY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          💍 <strong>Nate & Kita's Anniversary!</strong> ❤️
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Sun, Oct 11</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Drew Pomereau's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Wed, Oct 21</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Monika Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Sat, Oct 31</strong>
+          <span style="font-size:0.75em;background:#f97316;padding:2px 8px;border-radius:4px;color:#fff;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🎃 <strong>Halloween</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOVEMBER -->
+  <div class="section" data-month="11" style="border-left-color:#8b5cf6;">
+    <div class="section-header">
+      <span class="section-time">NOVEMBER 2026</span>
+      <span class="section-title">📅 November Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Sat, Nov 21</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Linda Johnson's Birthday!</strong> 🎉❤️
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:2px solid #22c55e;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#22c55e;">📅 Wed, Nov 11</strong>
+          <span style="font-size:0.75em;background:#22c55e;padding:2px 8px;border-radius:4px;color:#1a1a2e;">⭐ YOUR DAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎖️ <strong>Veterans Day</strong> 🇺🇸<br>
+          <span style="color:#22c55e;font-size:0.85em;font-weight:700;">Thank you for your service, Mark! US Army Medical Corps — 6 Years 💪🇺🇸</span>
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Thu, Nov 26</strong>
+          <span style="font-size:0.75em;background:#f97316;padding:2px 8px;border-radius:4px;color:#fff;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🦃 <strong>Thanksgiving</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECEMBER -->
+  <div class="section" data-month="12" style="border-left-color:#22c55e;">
+    <div class="section-header">
+      <span class="section-time">DECEMBER 2026</span>
+      <span class="section-title">📅 December Events</span>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Thu, Dec 17</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Barron Johnson's Birthday!</strong> 🎉
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid #e879f9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#e879f9;">📅 Thu, Dec 24</strong>
+          <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">🎂 BIRTHDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">
+          🎂 <strong>Nicholas Johnson's Birthday!</strong> 🎉🎄
+        </div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Fri, Dec 25</strong>
+          <span style="font-size:0.75em;background:#ef4444;padding:2px 8px;border-radius:4px;color:#fff;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🎄 <strong>Christmas Day</strong></div>
+      </div>
+      <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="color:#00d4ff;">📅 Thu, Dec 31</strong>
+          <span style="font-size:0.75em;background:#00d4ff;padding:2px 8px;border-radius:4px;color:#1a1a2e;">🎉 HOLIDAY</span>
+        </div>
+        <div style="font-size:0.9em;margin-top:6px;">🥂 <strong>New Year's Eve</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">💡 Tell ZEKE to add more events anytime! Just say "add to calendar"</p>
+
+</div>
+
+<!-- ==================== BEACHES TAB ==================== -->
+<div class="tab-content" id="tab-beaches">
+
+  <div class="section" style="border-left-color:#f97316;">
+    <div class="section-header">
+      <span class="section-time">NAPLES, FL</span>
+      <span class="section-title">🏖️ Top Naples Beaches</span>
+    </div>
+
+    <!-- Clam Pass -->
+    <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;border:2px solid #22c55e;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:#22c55e;">⭐ #1 Clam Pass Beach Park</strong>
+        <span style="font-size:0.75em;background:#22c55e;padding:2px 8px;border-radius:4px;color:#1a1a2e;">TOP PICK</span>
+      </div>
+      <div style="font-size:0.85em;margin-top:6px;color:#aaa;">
+        🚃 Free tram ride through mangrove forest<br>
+        Soft sand, calm water, not crowded<br>
+        Cabana & paddleboard rentals • Birdwatching<br>
+        📍 <a href="https://maps.google.com/?q=465+Seagate+Dr+Naples+FL" style="color:#00d4ff;" target="_blank">465 Seagate Dr, Naples</a>
+      </div>
+    </div>
+
+    <!-- Naples Pier -->
+    <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:#f97316;">🌅 #2 Naples Pier Beach</strong>
+        <span style="font-size:0.75em;background:#f97316;padding:2px 8px;border-radius:4px;color:#fff;">BEST SUNSET</span>
+      </div>
+      <div style="font-size:0.85em;margin-top:6px;color:#aaa;">
+        Historic pier built in 1888 • Dolphins offshore<br>
+        THE sunset spot in Naples<br>
+        📍 <a href="https://maps.google.com/?q=25+12th+Ave+S+Naples+FL" style="color:#00d4ff;" target="_blank">25 12th Ave S, Naples</a>
+      </div>
+    </div>
+
+    <!-- Lowdermilk -->
+    <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:#4ecdc4;">🏖️ #3 Lowdermilk Park</strong>
+        <span style="font-size:0.75em;background:#4ecdc4;padding:2px 8px;border-radius:4px;color:#1a1a2e;">BEST AMENITIES</span>
+      </div>
+      <div style="font-size:0.85em;margin-top:6px;color:#aaa;">
+        Restrooms, showers, concession stand<br>
+        Shaded picnic tables, gazebos • Beach wheelchairs<br>
+        Calm surf, well-maintained<br>
+        📍 <a href="https://maps.google.com/?q=1301+Gulf+Shore+Blvd+N+Naples+FL" style="color:#00d4ff;" target="_blank">1301 Gulf Shore Blvd N, Naples</a>
+      </div>
+    </div>
+
+    <!-- Delnor-Wiggins -->
+    <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:#3b82f6;">🐚 #4 Delnor-Wiggins Pass State Park</strong>
+        <span style="font-size:0.75em;background:#3b82f6;padding:2px 8px;border-radius:4px;color:#fff;">MOST BEAUTIFUL</span>
+      </div>
+      <div style="font-size:0.85em;margin-top:6px;color:#aaa;">
+        Ranked one of Florida's best beaches<br>
+        Crystal clear water, unspoiled • Snorkeling, shelling, nature trails<br>
+        Entry fee ~$6/car<br>
+        📍 <a href="https://maps.google.com/?q=11135+Gulf+Shore+Dr+Naples+FL" style="color:#00d4ff;" target="_blank">11135 Gulf Shore Dr, Naples</a>
+      </div>
+    </div>
+
+    <!-- Barefoot Beach -->
+    <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:#8b5cf6;">🐢 #5 Barefoot Beach Preserve</strong>
+        <span style="font-size:0.75em;background:#8b5cf6;padding:2px 8px;border-radius:4px;color:#fff;">HIDDEN GEM</span>
+      </div>
+      <div style="font-size:0.85em;margin-top:6px;color:#aaa;">
+        Quiet & serene, feels like a secret<br>
+        Protected preserve — tortoises & shorebirds<br>
+        Very peaceful<br>
+        📍 <a href="https://maps.google.com/?q=505+Barefoot+Beach+Blvd+Bonita+Springs+FL" style="color:#00d4ff;" target="_blank">505 Barefoot Beach Blvd, Bonita Springs</a>
+      </div>
+    </div>
+
+    <!-- Vanderbilt -->
+    <div style="background:#0f3460;border-radius:8px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong style="color:#e879f9;">🎉 #6 Vanderbilt Beach</strong>
+        <span style="font-size:0.75em;background:#e879f9;padding:2px 8px;border-radius:4px;color:#fff;">LIVELY & FUN</span>
+      </div>
+      <div style="font-size:0.85em;margin-top:6px;color:#aaa;">
+        Near Ritz-Carlton & Mercato shops/restaurants<br>
+        Jet ski rentals, beach chairs<br>
+        Arrive early — parking fills fast!<br>
+        📍 <a href="https://maps.google.com/?q=10100+Gulf+Shore+Dr+Naples+FL" style="color:#00d4ff;" target="_blank">10100 Gulf Shore Dr, Naples</a>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="note">💡 Tip: Clam Pass or Delnor-Wiggins during the day, Naples Pier for sunset! 🌅</p>
+
+</div>
+
+<!-- ==================== REAL ESTATE TAB ==================== -->
+<div class="tab-content" id="tab-realestate">
+
+  <!-- 611 Sea Pine Way -->
+  <div class="section" style="border-left-color:#22c55e;">
+    <div class="section-header">
+      <span class="section-time">BUYOUT</span>
+      <span class="section-title">🏠 611 Sea Pine Way, Unit H — West Palm Beach, FL</span>
+      <span class="badge urgent">IN PROGRESS</span>
+    </div>
+    <div class="info-box">
+      <strong>Property:</strong> Pine Ridge North Condo, Villa H<br>
+      <strong>Estimated Value:</strong> $260,000 (Wayne & Kathy's estimate)<br>
+      <strong>Adjusted Value:</strong> $234,000 (minus 10% discount = -$26,000)<br><br>
+      <strong>Current Ownership (1/3 each):</strong><br>
+      👥 Mark & Linda Johnson — 33.3%<br>
+      👥 Laura & Tom Campbell (Linda's sister) — 33.3%<br>
+      👥 Wayne & Kathy Widdison (Linda's brother) — 33.3% <span style="color:#f5a623;">← BUYING OUT</span><br><br>
+      <strong>After Buyout (50/50):</strong><br>
+      ✅ Mark & Linda Johnson — 50%<br>
+      ✅ Laura & Tom Campbell — 50%<br>
+      ❌ Wayne & Kathy Widdison — Bought out<br><br>
+      <strong>Buyout Numbers (after 10% discount):</strong><br>
+      💰 Wayne's 1/3 share: <strong>$78,000</strong><br>
+      💰 Each couple pays: <strong>$39,000</strong> (splitting Wayne's share 50/50)<br>
+      💵 <span style="color:#22c55e;">Savings vs full price: ~$8,667 per couple!</span><br><br>
+      <strong>Monthly Condo Fee:</strong><br>
+      🏢 Total condo fee: <strong>$604.38/month</strong><br>
+      💰 Each couple's 50% share: <strong>$302.19/month</strong><br><br>
+      <strong>Appliance Insurance:</strong><br>
+      🔧 Total: <strong>$455/year</strong> ($37.92/month)<br>
+      💰 Each couple's 50% share: <strong>$227.50/year</strong> ($18.96/month)<br><br>
+      <strong>Electricity (50/50 split):</strong><br>
+      ⚡ Empty (no people): $44/month → <strong>$22/month each</strong><br>
+      ⚡ Occupied: $75/month → <strong>$37.50/month each</strong><br><br>
+      <strong>Water (50/50 split — billed quarterly):</strong><br>
+      💧 ~$33/month ($99/quarter) → <strong>$16.50/month each</strong><br><br>
+      <strong>Condo Insurance (inside/contents — TBD):</strong><br>
+      🛡️ <strong>$___/year</strong> — <span style="color:#f5a623;">waiting on quote from Castle Key/Allstate</span><br><br>
+      <strong>WiFi (Mark & Linda only — not split):</strong><br>
+      📶 <strong>$52/month</strong>
+    </div>
+  </div>
+
+  <!-- National Family Mortgage -->
+  <div class="section" style="border-left-color:#4ecdc4;">
+    <div class="section-header">
+      <span class="section-time">RESOURCE</span>
+      <span class="section-title">🏦 National Family Mortgage® — Intra-Family Lending</span>
+    </div>
+    <div class="info-box">
+      <strong>Website:</strong> <a href="https://www.nationalfamilymortgage.com" style="color:#00d4ff;" target="_blank">nationalfamilymortgage.com</a><br>
+      <strong>Location:</strong> Concord, MA (local!)<br>
+      <strong>Track Record:</strong> $1 Billion+ in family loans documented<br>
+      <strong>Formerly:</strong> Circle Lending → Virgin Money US → National Family Mortgage<br><br>
+      <strong>What They Do:</strong><br>
+      • Formalize loans between family members with legal documents<br>
+      • Promissory Note, Mortgage/Deed of Trust, recorded lien<br>
+      • IRS compliant — uses Applicable Federal Rate (AFR)<br>
+      • Year-end tax forms (1098 & 1099-INT)<br>
+      • Payment processing, statements, mobile app<br><br>
+      <strong>Two Loan Types:</strong><br>
+      📋 <strong>Win-Win Mortgage®</strong> — Principal + Interest (like a regular mortgage) ← <span style="color:#22c55e;">Best for Wayne buyout</span><br>
+      📋 <strong>Gift Mortgage®</strong> — Interest-only (lower payments, more flexible)<br><br>
+      <strong>Cost:</strong><br>
+      💰 $65 one-time setup fee<br>
+      💰 $20/month loan servicing (for loans up to $400K)<br><br>
+      <strong>Why Use For 611 Sea Pine Way:</strong><br>
+      ✅ Pay Wayne over time instead of lump sum<br>
+      ✅ Wayne earns interest (better than bank rates)<br>
+      ✅ Everything legally documented<br>
+      ✅ IRS reporting handled automatically<br>
+      ✅ Protects family relationships — clear terms<br>
+      ✅ Only $20/month for full servicing
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="nfmVisitSite"><span class="cl">Visit <a href="https://www.nationalfamilymortgage.com" style="color:#00d4ff;" target="_blank">nationalfamilymortgage.com</a> — read their guide</span></li>
+      <li><input type="checkbox" class="task-cb" id="nfmDiscussFamily"><span class="cl">Discuss NFM option with Laura & Tom</span></li>
+      <li><input type="checkbox" class="task-cb" id="nfmDiscussWayne"><span class="cl">Discuss with Wayne & Kathy — would they accept payments over time?</span></li>
+      <li><input type="checkbox" class="task-cb" id="nfmCalculator"><span class="cl">Use their <a href="https://www.nationalfamilymortgage.com/calculators/" style="color:#00d4ff;" target="_blank">loan calculator</a> to estimate monthly payments</span></li>
+      <li><input type="checkbox" class="task-cb" id="nfmContact"><span class="cl">Contact NFM for consultation (they're in Concord MA!)</span></li>
+    </ul>
+  </div>
+
+  <!-- Buyout Checklist -->
+  <div class="section" style="border-left-color:#f5a623;">
+    <div class="section-header">
+      <span class="section-time">TO DO</span>
+      <span class="section-title">📋 Buyout Checklist</span>
+      <span class="badge todo">ACTION NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="reAppraisal"><span class="cl">Get independent appraisal (~$300-500) — protects all parties</span></li>
+      <li><input type="checkbox" class="task-cb" id="reAttorney"><span class="cl">Hire real estate attorney for buyout agreement & deed transfer</span></li>
+      <li><input type="checkbox" class="task-cb" id="reTalkLaura"><span class="cl">Confirm buyout split with Laura & Tom Campbell</span></li>
+      <li><input type="checkbox" class="task-cb" id="reTalkWayne"><span class="cl">Finalize price with Wayne & Kathy</span></li>
+      <li><input type="checkbox" class="task-cb" id="reBuyoutAgreement"><span class="cl">Draft & sign buyout agreement (get it in writing!)</span></li>
+      <li><input type="checkbox" class="task-cb" id="reTitleSearch"><span class="cl">Title search & title insurance</span></li>
+      <li><input type="checkbox" class="task-cb" id="reDeedUpdate"><span class="cl">Update deed — remove Wayne, reflect 50/50 ownership</span></li>
+      <li><input type="checkbox" class="task-cb" id="reHOACheck"><span class="cl">Check HOA/condo association transfer rules</span></li>
+      <li><input type="checkbox" class="task-cb" id="reInsurance"><span class="cl">Update Castle Key / Allstate condo insurance after transfer</span></li>
+      <li><input type="checkbox" class="task-cb" id="reWayneTax"><span class="cl">Wayne to check capital gains tax implications with accountant</span></li>
+      <li><input type="checkbox" class="task-cb" id="reNewAgreement"><span class="cl">Create co-ownership agreement with Laura & Tom (expenses, usage, maintenance)</span></li>
+    </ul>
+    <p class="note">💡 Even among family — get everything in writing. Protects everyone and avoids misunderstandings down the road.</p>
+  </div>
+
+  <!-- 67 Sea Ave -->
+  <div class="section" style="border-left-color:#3b82f6;">
+    <div class="section-header">
+      <span class="section-time">PROPERTY</span>
+      <span class="section-title">🏠 67 Sea Ave, Quincy, MA</span>
+      <span class="badge todo">PLANNING</span>
+    </div>
+    <div class="info-box">
+      <strong>Estimated Value:</strong> ~$1.74M (Redfin estimate)<br>
+      <strong>Each 1/3 share:</strong> ~$580,000<br><br>
+      <strong>Current Ownership (1/3 each):</strong><br>
+      👥 Mark & Linda Johnson — 33.3%<br>
+      👥 Nick Johnson — 33.3%<br>
+      👥 Estate — 33.3%<br><br>
+      <strong>Plan:</strong><br>
+      🏡 Sell 75 E Elm Ave, Quincy (~$661K Zestimate) to fund buyout<br>
+      💰 Estate has ~$200K cash<br>
+      💰 Mark's available funds: ~$835K (East Elm sale + estate cash)<br>
+      👥 Nick buying other 1/3 share
+    </div>
+  </div>
+
+  <!-- 67 Sea Ave Checklist -->
+  <div class="section" style="border-left-color:#f5a623;">
+    <div class="section-header">
+      <span class="section-time">TO DO</span>
+      <span class="section-title">📋 67 Sea Ave — Action Items</span>
+      <span class="badge todo">ACTION NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="seaAppraisal"><span class="cl">Get professional appraisal of 67 Sea Ave</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaElmAppraisal"><span class="cl">Get appraisal of 75 E Elm Ave for sale prep</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaAttorney"><span class="cl">Hire real estate attorney for estate buyout</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaNickAgreement"><span class="cl">Confirm buyout plan with Nick</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaEstateSettle"><span class="cl">Settle estate share — coordinate with attorney</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaElmList"><span class="cl">List 75 E Elm Ave for sale</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaElmSell"><span class="cl">Sell 75 E Elm Ave — close deal</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaDeedUpdate"><span class="cl">Update 67 Sea Ave deed after buyout</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaInsurance"><span class="cl">Update homeowner's insurance on 67 Sea Ave</span></li>
+      <li><input type="checkbox" class="task-cb" id="seaTaxPlan"><span class="cl">Tax planning — capital gains on East Elm sale (check 65+ exclusions)</span></li>
+    </ul>
+    <p class="note">💡 Coordinate timing: sell East Elm first to fund the Sea Ave buyout. Talk to attorney about estate distribution timeline.</p>
+  </div>
+
+</div>
+
+</div>
+
+<!-- ==================== BEER BREWING TAB ==================== -->
+<div class="tab-content" id="tab-brewing">
+
+  <div class="section" style="border-left-color:#f5a623;">
+    <div class="section-header">
+      <span class="section-time">RECIPE</span>
+      <span class="section-title">🍺 Johnson Bros American Pale Ale</span>
+      <span class="badge todo">BREW DAY TBD</span>
+    </div>
+    <div class="info-box">
+      <strong>Style:</strong> American Pale Ale<br>
+      <strong>Batch Size:</strong> 5 gallons (all-grain)<br>
+      <strong>ABV:</strong> ~5.5% | <strong>IBU:</strong> ~40<br>
+      <strong>OG:</strong> 1.054 | <strong>FG:</strong> 1.012<br>
+      <strong>Inspired by:</strong> Joe's American Pale Ale @ Flanigan's 🍻<br><br>
+
+      <strong>🌾 Grain Bill:</strong><br>
+      • 9 lbs — 2-Row Pale Malt<br>
+      • 1 lb — Crystal 40L<br>
+      • 0.5 lb — Munich Malt<br>
+      • 0.5 lb — Victory Malt<br><br>
+
+      <strong>🌿 Hops:</strong><br>
+      • 1 oz Centennial — 60 min (bittering)<br>
+      • 1 oz Cascade — 15 min (flavor)<br>
+      • 1 oz Cascade — 5 min (aroma)<br>
+      • 1 oz Citra — dry hop 5 days<br><br>
+
+      <strong>🧫 Yeast:</strong> Safale US-05 (clean American ale yeast)<br><br>
+
+      <strong>🌡️ Process:</strong><br>
+      • Mash at 152°F for 60 min<br>
+      • Boil 60 min<br>
+      • Ferment at 64-68°F for 2 weeks<br>
+      • Dry hop during last 5 days<br>
+      • Bottle or keg — carbonate 2 weeks<br><br>
+
+      <strong>🎯 Flavor Profile:</strong> Clean, citrusy, tropical hop punch from the Citra dry hop. Cascade gives classic American floral/grapefruit. Malt backbone is light and bready. Easy drinking summer beer.
+    </div>
+  </div>
+
+  <div class="section" style="border-left-color:#4ecdc4;">
+    <div class="section-header">
+      <span class="section-time">SHOPPING LIST</span>
+      <span class="section-title">🛒 Brew Day Supplies</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="brew_grain"><span class="cl">Grain: 9 lbs 2-Row, 1 lb Crystal 40L, 0.5 lb Munich, 0.5 lb Victory</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_hops"><span class="cl">Hops: 2 oz Cascade, 1 oz Centennial, 1 oz Citra</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_yeast"><span class="cl">Yeast: 1 packet Safale US-05</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_sanitizer"><span class="cl">Star San sanitizer</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_caps"><span class="cl">Bottle caps & priming sugar (if bottling)</span></li>
+    </ul>
+    <p class="note">💡 Nate has two 15-gallon pots — perfect for all-grain. Check if he has a mash tun or if you need a brew-in-a-bag setup.</p>
+  </div>
+
+  <div class="section" style="border-left-color:#22c55e;">
+    <div class="section-header">
+      <span class="section-time">BREW DAY</span>
+      <span class="section-title">📋 Brew Day Checklist — Mark, Nate & Nick</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="brew_date"><span class="cl">Pick a brew day with Nate & Nick</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_equip"><span class="cl">Confirm equipment: pots, thermometer, hydrometer, fermenter</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_water"><span class="cl">Get 8 gallons of water ready (filtered or spring)</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_mash"><span class="cl">Mash grains at 152°F — 60 min</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_sparge"><span class="cl">Sparge and collect wort (~6.5 gallons)</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_boil"><span class="cl">60 min boil — add hops at 60/15/5 min marks</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_cool"><span class="cl">Cool wort to 65-68°F</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_pitch"><span class="cl">Transfer to fermenter, pitch yeast</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_ferment"><span class="cl">Ferment 2 weeks at 64-68°F</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_dryhop"><span class="cl">Add Citra dry hop at day 9</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_bottle"><span class="cl">Bottle/keg day — carbonate 2 weeks</span></li>
+      <li><input type="checkbox" class="task-cb" id="brew_taste"><span class="cl">🍻 First taste! Compare to Joe's APA</span></li>
+    </ul>
+  </div>
+
+  <div class="section" style="border-left-color:#3b82f6;">
+    <div class="section-header">
+      <span class="section-time">TASTING NOTES</span>
+      <span class="section-title">📝 Tasting Log</span>
+    </div>
+    <div class="info-box">
+      <strong>Joe's American Pale Ale (Flanigan's) — 3/13/2026:</strong><br>
+      Notes: ______________________________________<br><br>
+      <strong>Johnson Bros APA — Batch #1:</strong><br>
+      Brew Date: _____ | Taste Date: _____<br>
+      Appearance: _____ | Aroma: _____<br>
+      Flavor: _____ | Mouthfeel: _____<br>
+      Rating: ⭐⭐⭐⭐⭐ | Would change: _____
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== WINDOW TINT TAB ==================== -->
+<div class="tab-content" id="tab-windowtint">
+
+  <div class="section" style="border-left-color:#f97316;">
+    <div class="section-header">
+      <span class="section-time">PROJECT</span>
+      <span class="section-title">🪟 Window Tinting — Linda's Office</span>
+      <span class="badge todo">RESEARCH</span>
+    </div>
+    <div class="info-box">
+      <strong>Problem:</strong> Linda's work room gets heavy sun exposure → excess heat & glare<br>
+      <strong>Solution:</strong> Residential window tint film to reflect heat and UV rays<br><br>
+
+      <strong>✅ Expected Results:</strong><br>
+      • Blocks <strong>40-78% of solar heat</strong><br>
+      • Reduces glare by up to <strong>80%</strong><br>
+      • Blocks <strong>99% UV rays</strong> (protects skin, furniture, carpet from fading)<br>
+      • Can lower cooling costs <strong>5-15%</strong> for that room<br>
+      • Payback period: <strong>3-5 years</strong> in energy savings
+    </div>
+  </div>
+
+  <div class="section" style="border-left-color:#00d4ff;">
+    <div class="section-header">
+      <span class="section-time">OPTIONS</span>
+      <span class="section-title">📊 Film Types Compared</span>
+    </div>
+    <div class="info-box">
+      <strong style="color:#22c55e;">🏆 Ceramic Film (RECOMMENDED)</strong><br>
+      Heat Reduction: 50-70% | Light In: 50-70%<br>
+      Best overall — high heat block while keeping room bright<br>
+      Safe for double-pane windows ✅<br><br>
+
+      <strong>Reflective / Silver Film</strong><br>
+      Heat Reduction: 60-80% | Light In: 20-40%<br>
+      Maximum heat block but room gets darker + mirror look outside<br><br>
+
+      <strong>Low-E Film</strong><br>
+      Heat Reduction: 40-55% | Light In: 60-75%<br>
+      Good balance — also keeps heat IN during winter (dual benefit)
+    </div>
+  </div>
+
+  <div class="section" style="border-left-color:#22c55e;">
+    <div class="section-header">
+      <span class="section-time">COST</span>
+      <span class="section-title">💰 Budget Estimates</span>
+    </div>
+    <div class="info-box">
+      <strong>DIY Installation:</strong><br>
+      • Film kits: <strong>$30-80</strong> (Amazon — Gila, Rabbitgoo brands)<br>
+      • Tools needed: spray bottle, squeegee, utility knife<br>
+      • Difficulty: Moderate — bubbles and creases are common<br><br>
+
+      <strong>Professional Installation:</strong><br>
+      • Cost: <strong>$5-12 per sq ft</strong><br>
+      • Typical room (3-5 windows): <strong>$200-600</strong><br>
+      • Includes lifetime warranty<br>
+      • Cleaner finish, no bubbles
+    </div>
+  </div>
+
+  <div class="section" style="border-left-color:#f5a623;">
+    <div class="section-header">
+      <span class="section-time">TO DO</span>
+      <span class="section-title">📋 Window Tint Checklist</span>
+      <span class="badge todo">ACTION NEEDED</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="wt_count"><span class="cl">Count windows in Linda's office & measure dimensions</span></li>
+      <li><input type="checkbox" class="task-cb" id="wt_type"><span class="cl">Check window type — single-pane or double-pane?</span></li>
+      <li><input type="checkbox" class="task-cb" id="wt_direction"><span class="cl">Note which direction windows face (south/west = most sun)</span></li>
+      <li><input type="checkbox" class="task-cb" id="wt_quotes"><span class="cl">Get 2-3 quotes from local window tint companies</span></li>
+      <li><input type="checkbox" class="task-cb" id="wt_hoa"><span class="cl">Check if HOA/condo has rules about window tinting</span></li>
+      <li><input type="checkbox" class="task-cb" id="wt_decide"><span class="cl">Decide: DIY or professional install?</span></li>
+      <li><input type="checkbox" class="task-cb" id="wt_film"><span class="cl">Choose film type (ceramic recommended)</span></li>
+      <li><input type="checkbox" class="task-cb" id="wt_install"><span class="cl">Schedule / complete installation</span></li>
+    </ul>
+    <p class="note">⚠️ If windows are double-pane, make sure the film is rated for double-pane glass — some films can trap heat between panes and crack the seal.</p>
+  </div>
+
+</div>
+
+<div class="save-row">
+  <button class="save-btn" onclick="saveAll()">💾 Save Progress</button>
+</div>
+<p class="saved-msg" id="savedMsg">✅ Saved!</p>
+
+<script>
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const today = new Date();
+const currentDay = today.getDay();
+const healthPrefix = 'mark_health_';
+const PROJECTS_KEY = 'mark_projects_v1';
+const TRAIL_IDS = ['h_exApogee','h_exWako','h_exHypoluxo','h_exPineNorth','h_exBeachWalk','h_exGreenCay','h_exOkeeheelee','h_exLakeTrail','h_exRiverbend','h_exCustardApple','h_exDaggerwing','h_exManatee','h_exRenegades','h_exBoonies'];
+const HEALTH_IDS = ['h_thyroid','h_monWeight','h_monSugar','h_monBP','h_breakfast','h_breakfastCoffee','h_rxGarlic','h_rxCoq10','h_rxMetAM','h_rxMetopAM','h_rxLosAM','h_rxAmlAM','h_healthCheck','h_weeklyEntry','h_foodRicePrep','h_foodBrownRice','h_foodCauliflower','h_foodPortions','h_lunch','h_dinner','h_rxAspirin','h_rxB12','h_rxMetPM','h_rxMetopPM','h_rxLosPM','h_rxAmlPM','h_rxAtor','h_alcNoBeach','h_alcTea','h_alcSober','h_coffee1','h_coffee2','h_coffee3','h_coffee4','h_melatonin'];
+const EXERCISE_IDS = ['h_exPondWalk','h_exIsoCrunch','h_exIsoGlute','h_exPoolForward','h_exPoolBackward','h_exPaddleBall','h_exPickleBall','h_exDiscGolf'].concat(TRAIL_IDS);
+
+document.getElementById('dateDisplay').textContent = today.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// ==================== TAB SWITCHING ====================
+function showTab(name, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  updateProgress();
+  if(name==='weather') loadWeather();
+}
+
+// ==================== PROGRESS BAR ====================
+function updateProgress() {
+  const activeTab = document.querySelector('.tab-content.active');
+  if(!activeTab) return;
+  const cbs = activeTab.querySelectorAll('.task-cb, .health-cb');
+  const checked = [...cbs].filter(c=>c.checked).length;
+  const pct = cbs.length ? Math.round((checked/cbs.length)*100) : 0;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressText').textContent = checked+'/'+cbs.length+' tasks — '+pct+'% complete';
+}
+
+// ==================== HEALTH DAY BAR ====================
+const healthDayBar = document.getElementById('healthDayBar');
+DAYS.forEach((d,i) => {
+  const btn = document.createElement('button');
+  btn.className = 'day-btn' + (i===currentDay?' active':'');
+  btn.textContent = d;
+  btn.onclick = () => loadHealthDay(i);
+  healthDayBar.appendChild(btn);
+});
+
+// ==================== ALCOHOL TRACKER ====================
+const alcTracker = document.getElementById('alcTracker');
+DAYS.forEach((d,i) => {
+  const div = document.createElement('div');
+  div.className = 'alc-day';
+  div.dataset.day = i;
+  div.innerHTML = '<span class="label">'+d+'</span><span class="icon">⬜</span>';
+  div.onclick = () => toggleAlcDay(div);
+  alcTracker.appendChild(div);
+});
+
+function toggleAlcDay(el) {
+  if (el.classList.contains('sober')) { el.classList.remove('sober'); el.classList.add('drank'); el.querySelector('.icon').textContent = '🍷'; }
+  else if (el.classList.contains('drank')) { el.classList.remove('drank'); el.querySelector('.icon').textContent = '⬜'; }
+  else { el.classList.add('sober'); el.querySelector('.icon').textContent = '✅'; }
+  updateAlcScore(); autoSaveHealth();
+}
+
+function updateAlcScore() {
+  const sober = document.querySelectorAll('.alc-day.sober').length;
+  const el = document.getElementById('alcScore');
+  if (sober >= 5) el.innerHTML = '<span style="color:#4ecdc4">🎉 '+sober+'/7 alcohol-free days — Great job!</span>';
+  else if (sober >= 3) el.innerHTML = '<span style="color:#f5a623">👍 '+sober+'/7 alcohol-free days — Keep going!</span>';
+  else el.innerHTML = '<span style="color:#ef4444">'+sober+'/7 alcohol-free days — Goal: 5+</span>';
+}
+
+// ==================== THYROID DOSE ====================
+function updateThyroid(dayIndex) {
+  document.getElementById('thyroidLabel').textContent = dayIndex === 0
+    ? 'Take LEVOTHYROXINE 100 mcg with water (empty stomach)'
+    : 'Take LEVOTHYROXINE 200 mcg with water (empty stomach)';
+}
+
+// ==================== HEALTH STORAGE ====================
+function getHealthKey(dayIndex) {
+  const d = new Date(today); d.setDate(d.getDate()-(currentDay-dayIndex));
+  return healthPrefix + d.toISOString().slice(0,10);
+}
+
+function autoSaveHealth() {
+  const active = document.querySelector('#healthDayBar .day-btn.active');
+  if(!active) return;
+  const di = DAYS.indexOf(active.textContent);
+  const key = getHealthKey(di);
+  const data = {};
+  HEALTH_IDS.forEach(id => { const el = document.getElementById(id); if(el) data[id] = el.checked; });
+  EXERCISE_IDS.forEach(id => { const el = document.getElementById(id); if(el) data[id] = el.checked; });
+  data.h_valWeight = document.getElementById('h_valWeight').value;
+  data.h_valSugar = document.getElementById('h_valSugar').value;
+  data.h_valBP = document.getElementById('h_valBP').value;
+  data.alcDays = {};
+  document.querySelectorAll('.alc-day').forEach(el => {
+    if(el.classList.contains('sober')) data.alcDays[el.dataset.day]='sober';
+    else if(el.classList.contains('drank')) data.alcDays[el.dataset.day]='drank';
+  });
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function saveHealth() {
+  autoSaveHealth();
+  const msg = document.getElementById('healthSavedMsg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'),2000);
+}
+
+function loadHealthDay(dayIndex) {
+  document.querySelectorAll('#healthDayBar .day-btn').forEach((btn,i)=>btn.classList.toggle('active',i===dayIndex));
+  updateThyroid(dayIndex);
+  const data = JSON.parse(localStorage.getItem(getHealthKey(dayIndex))||'{}');
+  HEALTH_IDS.forEach(id => { const el = document.getElementById(id); if(el) el.checked = !!data[id]; });
+  EXERCISE_IDS.forEach(id => { const el = document.getElementById(id); if(el) el.checked = !!data[id]; });
+  document.getElementById('h_valWeight').value = data.h_valWeight||'';
+  document.getElementById('h_valSugar').value = data.h_valSugar||'';
+  document.getElementById('h_valBP').value = data.h_valBP||'';
+  document.querySelectorAll('.alc-day').forEach(el => {
+    el.classList.remove('sober','drank'); el.querySelector('.icon').textContent='⬜';
+    const s = data.alcDays && data.alcDays[el.dataset.day];
+    if(s==='sober'){el.classList.add('sober');el.querySelector('.icon').textContent='✅';}
+    else if(s==='drank'){el.classList.add('drank');el.querySelector('.icon').textContent='🍷';}
+  });
+  updateProgress(); updateAlcScore(); setTimeout(updateMiles,50);
+}
+
+function resetHealth() {
+  if(!confirm('Reset today? This clears all health checkboxes.')) return;
+  HEALTH_IDS.forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  EXERCISE_IDS.forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  document.getElementById('h_valWeight').value='';
+  document.getElementById('h_valSugar').value='';
+  document.getElementById('h_valBP').value='';
+  updateProgress(); autoSaveHealth(); updateMiles();
+}
+
+// ==================== MILEAGE TRACKING ====================
+function updateMiles() {
+  let todayMi = 0;
+  if(document.getElementById('h_exPondWalk').checked) todayMi += 3;
+  document.querySelectorAll('.trail-cb').forEach(cb => { if(cb.checked) todayMi += parseFloat(cb.dataset.miles||0); });
+  document.getElementById('todayMiles').textContent = todayMi.toFixed(1);
+  let weekTotal = 0;
+  for(let i=0;i<7;i++){
+    const d = JSON.parse(localStorage.getItem(getHealthKey(i))||'{}');
+    let dm = 0;
+    if(d.h_exPondWalk) dm += 3;
+    TRAIL_IDS.forEach(id=>{ if(d[id]){const el=document.getElementById(id);if(el)dm+=parseFloat(el.dataset.miles||0);} });
+    weekTotal += dm;
+  }
+  const activeBtn = document.querySelector('#healthDayBar .day-btn.active');
+  const activeDI = DAYS.indexOf(activeBtn.textContent);
+  const activeData = JSON.parse(localStorage.getItem(getHealthKey(activeDI))||'{}');
+  let storedDayMi = 0;
+  if(activeData.h_exPondWalk) storedDayMi += 3;
+  TRAIL_IDS.forEach(id=>{ if(activeData[id]){const el=document.getElementById(id);if(el)storedDayMi+=parseFloat(el.dataset.miles||0);} });
+  weekTotal = weekTotal - storedDayMi + todayMi;
+  document.getElementById('weekMiles').textContent = weekTotal.toFixed(1);
+}
+['h_exPondWalk',...TRAIL_IDS].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change',updateMiles); });
+
+// ==================== PROJECTS STORAGE ====================
+function autoSaveProjects() {
+  const data = {};
+  document.querySelectorAll('.task-cb').forEach(cb => { data[cb.id] = cb.checked; });
+  localStorage.setItem(PROJECTS_KEY, JSON.stringify(data));
+}
+function loadProjects() {
+  const data = JSON.parse(localStorage.getItem(PROJECTS_KEY)||'{}');
+  Object.keys(data).forEach(id => { const el = document.getElementById(id); if(el) el.checked = data[id]; });
+}
+function saveAll() {
+  autoSaveProjects();
+  autoSaveHealth();
+  const msg = document.getElementById('savedMsg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'),2000);
+}
+
+// ==================== WIRE UP AUTO-SAVE ====================
+document.querySelectorAll('.task-cb').forEach(cb => cb.addEventListener('change', () => { updateProgress(); autoSaveProjects(); }));
+document.querySelectorAll('.health-cb').forEach(cb => cb.addEventListener('change', () => { updateProgress(); autoSaveHealth(); }));
+['h_valWeight','h_valSugar','h_valBP'].forEach(id => document.getElementById(id).addEventListener('input', autoSaveHealth));
+
+// ==================== WEATHER ====================
+const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',85:'🌨️',95:'⛈️',96:'⛈️',99:'⛈️'};
+const WMO_DESC = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',51:'Light drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm'};
+const FDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const CITIES = [
+  { name: 'Naples, FL', lat: 26.1420, lon: -81.7948, cls: 'fl', flag: '📍' },
+  { name: 'Greenacres, FL', lat: 26.6276, lon: -80.1354, cls: 'fl', flag: '🌴' },
+  { name: 'Quincy, MA', lat: 42.2529, lon: -71.0023, cls: 'ma', flag: '🏠' }
+];
+
+async function loadWeather() {
+  const grid = document.getElementById('weatherGrid');
+  grid.innerHTML = '<div class="weather-loading">☀️ Loading weather...</div>';
+  try {
+    const results = await Promise.all(CITIES.map(async city => {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=5`;
+      const res = await fetch(url);
+      return { city, data: await res.json() };
+    }));
+    grid.innerHTML = '';
+    results.forEach(({ city, data }) => {
+      const c = data.current, d = data.daily;
+      const temp = Math.round(c.temperature_2m), feelsLike = Math.round(c.apparent_temperature);
+      const icon = WMO_ICONS[c.weather_code]||'🌡️', desc = WMO_DESC[c.weather_code]||'Unknown';
+      let forecastHTML = '';
+      for(let i=1;i<d.time.length;i++){
+        const dt=new Date(d.time[i]+'T12:00:00');
+        forecastHTML+=`<div class="forecast-day"><div class="ficon">${WMO_ICONS[d.weather_code[i]]||'🌡️'}</div><div>${FDAYS[dt.getDay()]}</div><div class="ftemp">${Math.round(d.temperature_2m_max[i])}°</div><div>${Math.round(d.temperature_2m_min[i])}°</div></div>`;
+      }
+      const div = document.createElement('div');
+      div.className = `weather-city ${city.cls}`;
+      div.innerHTML = `<h3>${city.flag} ${city.name}</h3><div class="weather-now"><span class="weather-icon">${icon}</span><div><div class="weather-temp ${temp>=60?'warm':'cold'}">${temp}°F</div><div class="weather-desc">${desc}</div></div></div><div class="weather-details">🌡️ Feels like ${feelsLike}°F<br>💧 Humidity ${c.relative_humidity_2m}%<br>💨 Wind ${Math.round(c.wind_speed_10m)} mph</div><div class="forecast-row">${forecastHTML}</div>`;
+      grid.appendChild(div);
+    });
+    document.getElementById('weatherUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch(e) { grid.innerHTML = '<div class="weather-loading">⚠️ Could not load weather.</div>'; }
+}
+
+// ==================== CALENDAR REORDER ====================
+function reorderCalendar() {
+  const cal = document.getElementById('tab-calendar');
+  if(!cal) return;
+  const sections = [...cal.querySelectorAll('.section[data-month]')];
+  const note = cal.querySelector('.note');
+  const cm = new Date().getMonth() + 1;
+  sections.sort((a,b) => {
+    const am=parseInt(a.dataset.month), bm=parseInt(b.dataset.month);
+    return (am>=cm?am-cm:am+12-cm) - (bm>=cm?bm-cm:bm+12-cm);
+  });
+  sections.forEach(s => cal.insertBefore(s, note));
+}
+
+// ==================== INIT ====================
+updateThyroid(currentDay);
+loadHealthDay(currentDay);
+loadProjects();
+updateProgress();
+reorderCalendar();
+loadWeather();
+setTimeout(updateMiles, 100);
+</script>
+</body>
+</html>
