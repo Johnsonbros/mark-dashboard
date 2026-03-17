@@ -161,6 +161,7 @@
   <button class="tab-btn" onclick="showTab('realestate',this)">🏠 Real Estate</button>
   <button class="tab-btn" onclick="showTab('beaches',this)">🏖️ Beaches</button>
   <button class="tab-btn" onclick="showTab('foodmedicine',this)">🥦 Food as Medicine</button>
+  <button class="tab-btn" onclick="showTab('airtravel',this)">✈️ Air Travel</button>
   <button class="tab-btn" onclick="showTab('brewing',this)">🍺 Brewing</button>
   <button class="tab-btn" onclick="showTab('windowtint',this)">🪟 Window Tint</button>
 </div>
@@ -1886,6 +1887,120 @@
   </div>
 
 </div>
+
+</div>
+
+<!-- ==================== AIR TRAVEL TAB ==================== -->
+<div class="tab-content" id="tab-airtravel">
+
+  <div class="section" style="border-left-color:#00d4ff;">
+    <div class="section-header">
+      <span class="section-time">LOYALTY</span>
+      <span class="section-title">✈️ JetBlue TrueBlue — Tiles & Rewards</span>
+    </div>
+    <div class="info-box">
+      <strong>🟦 What Are Tiles?</strong><br>
+      Tiles are JetBlue's loyalty progress tracker. Earn tiles → unlock perks → reach elite status.<br><br>
+
+      <strong>How You Earn Tiles:</strong><br>
+      • ✈️ Flying JetBlue — based on fare amount<br>
+      • 💳 JetBlue Credit Card — <strong>1 tile per $1,000</strong> in spending<br>
+      • 🏖️ JetBlue Vacations packages<br>
+      • 🏨 TrueBlue Travel (hotels, car rentals via JetBlue)<br><br>
+
+      <strong>🎁 Perks You Pick (choose your reward!):</strong><br>
+      <span style="color:#4ecdc4;">Every 10 tiles, YOU choose a perk:</span><br>
+      • 🧳 Free checked bags<br>
+      • 💺 Even More Space seating (extra legroom)<br>
+      • 🍸 Free drinks & snacks<br>
+      • ⬆️ "Move to Mint" upgrade certificate (business class!)<br>
+      • 🔄 Same-day flight switches<br>
+      <span style="color:#f5a623;">⚠️ Can't repeat the same perk — pick your best one first!</span>
+    </div>
+  </div>
+
+  <div class="section" style="border-left-color:#4ecdc4;">
+    <div class="section-header">
+      <span class="section-time">STATUS</span>
+      <span class="section-title">⭐ Mosaic Elite Status Levels</span>
+    </div>
+    <div class="info-box">
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:0.9em;">
+        <strong style="color:#00d4ff;">10 tiles</strong><span>🎁 First Perks You Pick</span>
+        <strong style="color:#00d4ff;">20 tiles</strong><span>🎁 Second perk</span>
+        <strong style="color:#00d4ff;">30 tiles</strong><span>🎁 Third perk</span>
+        <strong style="color:#00d4ff;">40 tiles</strong><span>🎁 Fourth perk</span>
+        <strong style="color:#f5a623;">50 tiles</strong><span>⭐ <strong>Mosaic 1</strong> — Elite status!</span>
+        <strong style="color:#f5a623;">100 tiles</strong><span>⭐⭐ <strong>Mosaic 2</strong></span>
+        <strong style="color:#f97316;">150 tiles</strong><span>⭐⭐⭐ <strong>Mosaic 3</strong></span>
+        <strong style="color:#ef4444;">250 tiles</strong><span>⭐⭐⭐⭐ <strong>Mosaic 4</strong> (top tier)</span>
+      </div><br>
+
+      <strong>Mosaic Benefits:</strong><br>
+      • Priority boarding & security lanes<br>
+      • Free checked bags<br>
+      • Even More Space (extra legroom) seating<br>
+      • Free same-day flight changes<br>
+      • Bonus points on every flight (3 extra per $1)<br>
+      • Higher tiers: <strong>Mint (business class) upgrades!</strong> ✨
+    </div>
+  </div>
+
+  <div class="section" style="border-left-color:#22c55e;">
+    <div class="section-header">
+      <span class="section-time">TRACKER</span>
+      <span class="section-title">📊 Mark & Linda's Tile Progress</span>
+    </div>
+    <div class="info-box">
+      <strong>Mark's Tiles:</strong> <span style="color:#f5a623;">___</span> / 50 (Mosaic 1)<br>
+      <div class="progress-bar" style="margin:6px 0;"><div class="progress-fill" style="width:0%;"></div></div>
+      <strong>Linda's Tiles:</strong> <span style="color:#f5a623;">___</span> / 50 (Mosaic 1)<br>
+      <div class="progress-bar" style="margin:6px 0;"><div class="progress-fill" style="width:0%;"></div></div>
+      <span style="color:#aaa;font-size:0.85em;">Update your tile counts here as you fly! Check at jetblue.com/trueblue or the JetBlue app.</span>
+    </div>
+    <ul class="checklist">
+      <li><input type="checkbox" class="task-cb" id="jb_signup"><span class="cl">✅ Sign up for TrueBlue (FREE) — <a href="https://www.jetblue.com/trueblue" style="color:#00d4ff;" target="_blank">jetblue.com/trueblue</a></span></li>
+      <li><input type="checkbox" class="task-cb" id="jb_app"><span class="cl">📱 Download JetBlue app (track tiles, mobile boarding pass)</span></li>
+      <li><input type="checkbox" class="task-cb" id="jb_card"><span class="cl">💳 Consider JetBlue credit card (1 tile per $1K spend + bonus points)</span></li>
+      <li><input type="checkbox" class="task-cb" id="jb_book"><span class="cl">🖥️ Always book directly on jetblue.com (3 bonus points per $1)</span></li>
+    </ul>
+  </div>
+
+  <div class="section" style="border-left-color:#f5a623;">
+    <div class="section-header">
+      <span class="section-time">TIPS</span>
+      <span class="section-title">💡 JetBlue Pro Tips for BOS ↔ FLL/PBI</span>
+    </div>
+    <div class="info-box">
+      <strong>Your Route:</strong> Boston (BOS) ↔ Fort Lauderdale (FLL) / West Palm Beach (PBI)<br><br>
+
+      <strong>Money-Saving Tips:</strong><br>
+      • 📅 <strong>Book Tuesdays & Wednesdays</strong> — cheapest JetBlue fares<br>
+      • ⏰ <strong>Book 3-6 weeks ahead</strong> for best domestic prices<br>
+      • 🔔 Set fare alerts on JetBlue app or Google Flights<br>
+      • 💺 <strong>Blue Basic</strong> = cheapest but no carry-on bag, no changes<br>
+      • 💺 <strong>Blue</strong> = carry-on included, free changes — usually worth the upgrade<br>
+      • 🧳 Pack light — JetBlue allows 1 personal item free on all fares<br><br>
+
+      <strong>Points Redemption:</strong><br>
+      • Points don't expire as long as you have activity every 24 months<br>
+      • Best value: redeem for flights (not gift cards)<br>
+      • Free changes/cancellations on award flights (except Blue Basic)<br>
+      • Can use points + cash combo ("Points + Pay")
+    </div>
+  </div>
+
+  <div class="section" style="border-left-color:#3b82f6;">
+    <div class="section-header">
+      <span class="section-time">FLIGHTS</span>
+      <span class="section-title">🛫 Flight Log</span>
+    </div>
+    <div class="info-box">
+      <strong>2026 Flights:</strong><br>
+      • Mar 17 — ✈️ PBI/FLL → BOS (Mark & Linda fly home for St. Patrick's Day ☘️)<br>
+      • <em>Add flights as you book them!</em>
+    </div>
+  </div>
 
 </div>
 
