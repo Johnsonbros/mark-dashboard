@@ -1,0 +1,46 @@
+# Mark/Zenith workspace backup ignores
+# Secrets / credentials
+.env
+.env.*
+*.env
+!.env.example
+*secret*
+*token*
+*credential*
+*password*
+*oauth*
+auth.json
+auth.json.*
+credentials/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Runtime/cache/db artifacts
+.aoa/
+.claude/
+CLAUDE.md
+.cache/
+cache/
+tmp/
+logs/
+sessions/
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.pid
+*.lock
+.DS_Store
+
+# Local fallback backups when remote push is unavailable
+.backup-bundles/
